@@ -43,17 +43,6 @@
 		goto('/');
 	}
 
-	function shareFacebook() {
-		const url = encodeURIComponent(window.location.origin);
-		const text = encodeURIComponent(`I just scored ${score}/${total} on the Guess the Masterpiece quiz! Can you beat my score?`);
-		window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank');
-	}
-
-	function shareTwitter() {
-		const url = encodeURIComponent(window.location.origin);
-		const text = encodeURIComponent(`I just scored ${score}/${total} on the Guess the Masterpiece quiz! 🎨 Can you beat my score?`);
-		window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-	}
 </script>
 
 <svelte:head>
@@ -154,28 +143,13 @@
 		</div>
 
 		<!-- Action Buttons -->
-		<div class="space-y-4 mb-8">
+		<div class="mb-8">
 			<button 
 				class="btn-skeu btn-primary w-full md:w-auto px-8"
 				on:click={playAgain}
 			>
 				🎮 Play Again
 			</button>
-			
-			<div class="flex flex-col md:flex-row gap-4 justify-center">
-				<button 
-					class="btn-skeu btn-secondary px-6"
-					on:click={shareFacebook}
-				>
-					📱 Share on Facebook
-				</button>
-				<button 
-					class="btn-skeu btn-secondary px-6"
-					on:click={shareTwitter}
-				>
-					🐦 Share on Twitter
-				</button>
-			</div>
 		</div>
 
 		<!-- Encouragement -->

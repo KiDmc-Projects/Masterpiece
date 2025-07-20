@@ -18,7 +18,7 @@ export async function getDifficultyLevels() {
 	return data;
 }
 
-export async function getQuestionsByDifficulty(difficultyId, limit = 10) {
+export async function getQuestionsByDifficulty(difficultyId, limit = 10, language = 'ru') {
 	console.log('Fetching questions for difficulty:', difficultyId);
 	
 	// Get artworks for this difficulty level
@@ -44,18 +44,24 @@ export async function getQuestionsByDifficulty(difficultyId, limit = 10) {
 	
 	// Build questions from artworks (simplified - no complex joins needed)
 	const questions = artworksData.map(artwork => {
+		const isRussian = language === 'ru';
+		const title = isRussian ? artwork.title_ru : artwork.title_en;
+		const artist = isRussian ? artwork.artist_name_ru : artwork.artist_name_en;
+		
 		const question = {
 			id: artwork.id,
 			artwork_id: artwork.id,
-			question_text: `Who painted "${artwork.title_en}"?`,
-			painting_title: artwork.title_en,
-			painting_artist: artwork.artist_name_en,
+			question_text: isRussian ? `Кто написал картину \"${title}\"?` : `Who painted \"${title}\"?`,
+			painting_title: title,
+			painting_artist: artist,
 			image_url: getImageUrl(artwork.image_path),
-			correct_answer: artwork.artist_name_en,
-			option_a: artwork.artist_name_en,
-			option_b: getRandomArtist(artwork.artist_name_en, 1),
-			option_c: getRandomArtist(artwork.artist_name_en, 2),
-			explanation: `${artwork.title_en} was painted by ${artwork.artist_name_en} in ${artwork.year_created}.`
+			correct_answer: artist,
+			option_a: artist,
+			option_b: getRandomArtist(artist, 1, language),
+			option_c: getRandomArtist(artist, 2, language),
+			explanation: isRussian 
+				? `${title} была написана ${artist} в ${artwork.year_created} году.`
+				: `${title} was painted by ${artist} in ${artwork.year_created}.`
 		};
 		
 		console.log('Created question:', question);
@@ -87,11 +93,18 @@ function createMockQuestions(difficultyId, limit) {
 	return mockQuestions;
 }
 
-function getRandomArtist(correctArtist, index) {
-	const randomArtists = [
-		'Pablo Picasso', 'Claude Monet', 'Salvador Dalí', 'Van Gogh', 
-		'Michelangelo', 'Da Vinci', 'Rembrandt', 'Renoir'
+function getRandomArtist(correctArtist, index, language = 'en') {
+	const randomArtistsEn = [
+		'Pablo Picasso', 'Claude Monet', 'Salvador Dalí', 'Vincent van Gogh', 
+		'Michelangelo', 'Leonardo da Vinci', 'Rembrandt', 'Pierre-Auguste Renoir'
 	];
+	
+	const randomArtistsRu = [
+		'Пабло Пикассо', 'Клод Моне', 'Сальвадор Дали', 'Винсент ван Гог',
+		'Микеланджело', 'Леонардо да Винчи', 'Рембрандт', 'Пьер-Огюст Ренуар'
+	];
+	
+	const randomArtists = language === 'ru' ? randomArtistsRu : randomArtistsEn;
 	
 	// Filter out the correct artist and return a random one
 	const filtered = randomArtists.filter(artist => artist !== correctArtist);
@@ -310,45 +323,50 @@ export async function testSupabaseConnection() {
 }
 
 // Helper function to get random questions for Mix difficulty
-export async function getMixQuestions(limit = 10) {
-	const { data, error } = await supabase
-		.from('quiz_questions')
-		.select(`
-			*,
-			artwork:artworks(
-				id,
-				title_en,
-				title_ru,
-				image_path,
-				year_created,
-				artist:artists(
-					id,
-					name_en,
-					name_ru,
-					birth_year,
-					death_year
-				)
-			)
-		`)
+export async function getMixQuestions(limit = 10, language = 'ru') {
+	console.log('Fetching mix questions for language:', language);
+	
+	// Get random artworks from all difficulty levels
+	const { data: artworksData, error: artworksError } = await supabase
+		.from('artworks')
+		.select('*')
 		.limit(limit * 2); // Get more to randomize
-	
-	if (error) {
-		console.error('Error fetching mix questions:', error);
-		return [];
+
+	if (artworksError || !artworksData || artworksData.length === 0) {
+		console.error('Error fetching mix artworks:', artworksError);
+		return createMockQuestions(4, limit); // Use difficulty 4 for mix
 	}
-	
-	// Shuffle and limit
-	const shuffled = data.sort(() => 0.5 - Math.random());
-	return shuffled.slice(0, limit).map(question => ({
-		...question,
-		question_text: `Who painted "${question.artwork.title_en}"?`,
-		painting_title: question.artwork.title_en,
-		painting_artist: question.artwork.artist.name_en,
-		image_url: getImageUrl(question.artwork.image_path),
-		correct_answer: question.correct_answer_en,
-		option_a: question.option_a_en,
-		option_b: question.option_b_en,
-		option_c: question.option_c_en,
-		explanation: question.explanation_en
-	}));
+
+	console.log(`Found ${artworksData.length} artworks for mix difficulty`);
+
+	// Shuffle and limit artworks
+	const shuffledArtworks = artworksData.sort(() => 0.5 - Math.random()).slice(0, limit);
+
+	// Build questions from random artworks
+	const questions = shuffledArtworks.map(artwork => {
+		const isRussian = language === 'ru';
+		const title = isRussian ? artwork.title_ru : artwork.title_en;
+		const artist = isRussian ? artwork.artist_name_ru : artwork.artist_name_en;
+		
+		const question = {
+			id: artwork.id,
+			artwork_id: artwork.id,
+			question_text: isRussian ? `Кто написал картину "${title}"?` : `Who painted "${title}"?`,
+			painting_title: title,
+			painting_artist: artist,
+			image_url: getImageUrl(artwork.image_path),
+			correct_answer: artist,
+			option_a: artist,
+			option_b: getRandomArtist(artist, 1, language),
+			option_c: getRandomArtist(artist, 2, language),
+			explanation: isRussian 
+				? `${title} была написана ${artist} в ${artwork.year_created} году.`
+				: `${title} was painted by ${artist} in ${artwork.year_created}.`
+		};
+		
+		console.log('Created mix question:', question);
+		return question;
+	});
+
+	return questions;
 }

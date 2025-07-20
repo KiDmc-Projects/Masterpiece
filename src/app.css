@@ -55,10 +55,20 @@ body {
 /* Image container */
 .painting-container {
 	@apply relative bg-white rounded-xl shadow-skeu-lg overflow-hidden;
-	@apply aspect-square md:aspect-auto md:max-h-96 md:max-w-full;
-	@apply flex items-center justify-center;
+	@apply w-full flex items-center justify-center;
+	min-height: 250px;
+	max-height: 400px;
+}
+
+@media (min-width: 768px) {
+	.painting-container {
+		min-height: 300px;
+		max-height: 500px;
+	}
 }
 
 .painting-image {
-	@apply max-w-full max-h-full object-contain;
+	@apply w-full h-full object-contain;
+	max-width: 100%;
+	max-height: 100%;
 }

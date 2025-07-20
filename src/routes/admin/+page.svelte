@@ -120,7 +120,16 @@
 			// 1. Upload image to Supabase storage
 			const difficultyFolder = getDifficultyFolder(formData.difficulty_level);
 			const timestamp = Date.now();
-			const fileName = `${formData.artist_name_en.toLowerCase().replace(/\s+/g, '_')}_${formData.title_en.toLowerCase().replace(/\s+/g, '_')}_${timestamp}.jpg`;
+			// Clean filename by removing special characters and accents
+			const cleanArtist = formData.artist_name_en.toLowerCase()
+				.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
+				.replace(/[^a-z0-9\s]/g, '') // Remove special chars
+				.replace(/\s+/g, '_'); // Replace spaces with underscores
+			const cleanTitle = formData.title_en.toLowerCase()
+				.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
+				.replace(/[^a-z0-9\s]/g, '') // Remove special chars
+				.replace(/\s+/g, '_'); // Replace spaces with underscores
+			const fileName = `${cleanArtist}_${cleanTitle}_${timestamp}.jpg`;
 			const imagePath = `${difficultyFolder}/${fileName}`;
 			
 			console.log('Attempting to upload:', imagePath);
@@ -231,7 +240,16 @@
 			// If new image is uploaded, handle the upload
 			if (formData.image_file) {
 				const difficultyFolder = getDifficultyFolder(formData.difficulty_level);
-				const fileName = `${formData.artist_name_en.toLowerCase().replace(/\s+/g, '_')}_${formData.title_en.toLowerCase().replace(/\s+/g, '_')}.jpg`;
+				// Clean filename by removing special characters and accents
+				const cleanArtist = formData.artist_name_en.toLowerCase()
+					.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
+					.replace(/[^a-z0-9\s]/g, '') // Remove special chars
+					.replace(/\s+/g, '_'); // Replace spaces with underscores
+				const cleanTitle = formData.title_en.toLowerCase()
+					.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
+					.replace(/[^a-z0-9\s]/g, '') // Remove special chars
+					.replace(/\s+/g, '_'); // Replace spaces with underscores
+				const fileName = `${cleanArtist}_${cleanTitle}.jpg`;
 				imagePath = `${difficultyFolder}/${fileName}`;
 				
 				const uploadResult = await uploadImage(formData.image_file, imagePath);

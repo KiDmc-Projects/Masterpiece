@@ -13,10 +13,12 @@
 	let isLoading = true;
 	let questions = [];
 	let currentQuestionData = null;
+	let autoAdvanceTimer = null;
 	
-	// Get difficulty from URL params
+	// Get difficulty and language from URL params
 	$: difficulty = $page.url.searchParams.get('difficulty') || '1';
 	$: level = $page.url.searchParams.get('level') || 'neophyte';
+	$: selectedLang = $page.url.searchParams.get('lang') || 'ru';
 
 	let answers = [];
 
@@ -37,11 +39,11 @@
 			if (difficulty === '4') {
 				// Mix difficulty - get random questions from all levels
 				console.log('Fetching mix questions...');
-				questions = await getMixQuestions(totalQuestions);
+				questions = await getMixQuestions(totalQuestions, selectedLang);
 			} else {
 				// Specific difficulty level
 				console.log('Fetching questions for difficulty level:', parseInt(difficulty));
-				questions = await getQuestionsByDifficulty(parseInt(difficulty), totalQuestions);
+				questions = await getQuestionsByDifficulty(parseInt(difficulty), totalQuestions, selectedLang);
 			}
 			
 			console.log('Questions loaded:', questions);
@@ -91,12 +93,21 @@
 
 	function updateAnswers() {
 		if (currentQuestionData) {
+			// Create answers array with all unique options
 			answers = [
 				currentQuestionData.option_a,
 				currentQuestionData.option_b,
-				currentQuestionData.option_c,
-				currentQuestionData.correct_answer
+				currentQuestionData.option_c
 			];
+			
+			// Remove duplicates and ensure we have the correct answer included
+			answers = [...new Set(answers)];
+			
+			// Make sure correct answer is included (replace one option if needed)
+			if (!answers.includes(currentQuestionData.correct_answer)) {
+				answers[0] = currentQuestionData.correct_answer;
+			}
+			
 			// Shuffle answers so correct answer isn't always in same position
 			answers = answers.sort(() => Math.random() - 0.5);
 		}
@@ -113,13 +124,24 @@
 			score++;
 		}
 		
+		// Clear any existing timer
+		if (autoAdvanceTimer) {
+			clearTimeout(autoAdvanceTimer);
+		}
+		
 		// Auto-advance after 2 seconds
-		setTimeout(() => {
+		autoAdvanceTimer = setTimeout(() => {
 			nextQuestion();
 		}, 2000);
 	}
 
 	function nextQuestion() {
+		// Clear auto-advance timer
+		if (autoAdvanceTimer) {
+			clearTimeout(autoAdvanceTimer);
+			autoAdvanceTimer = null;
+		}
+		
 		if (currentQuestion >= totalQuestions || currentQuestion >= questions.length) {
 			// Go to results page
 			goto(`/results?score=${score}&total=${totalQuestions}&level=${level}`);
@@ -236,15 +258,7 @@
 						{/if}
 
 						<!-- Navigation -->
-						<div class="mt-6 flex justify-between items-center">
-							<button 
-								class="btn-secondary px-4 py-2 text-sm"
-								disabled={currentQuestion === 1}
-								on:click={() => {/* Previous question logic */}}
-							>
-								Previous
-							</button>
-							
+						<div class="mt-6 flex justify-end items-center">
 							{#if showResult}
 								<button 
 									class="btn-primary px-6 py-2"

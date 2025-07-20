@@ -148,7 +148,7 @@ npm run dev
 
 ### Admin Access
 - Navigate to `/admin`
-- Password: `054864081`
+- Password: ``
 - Upload artworks and manage quiz content
 
 ---
