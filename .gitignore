@@ -133,3 +133,6 @@ supabase/.env
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Design files
+design-Reference/
