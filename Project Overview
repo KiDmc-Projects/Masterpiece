@@ -1,0 +1,44 @@
+Act as an expert SvelteKit developer. Your task is to build a quiz application based on the following detailed specifications.
+
+**Project Overview:**
+The application is a quiz game where users are tested on their knowledge of famous paintings. The app will have three difficulty levels. All data will be fetched from a Supabase backend.
+
+**Technology Stack:**
+- **Framework:** SvelteKit
+- **Styling:** Tailwind CSS
+- **Backend/Database:** Supabase (for database and image storage)
+- **Serverless Functions:** Supabase Edge Functions
+- **Version Control:** Git (hosted on GitHub)
+- **Deployment:** Cloudflare Pages
+
+**Initial Setup:**
+1.  Initialize a new SvelteKit project.
+2.  Set up Tailwind CSS for styling within the SvelteKit project.
+
+**Design Reference**
+1. Check local files, below you can find the paths
+**Desktop** - /Users/dima/Git/vibecoding/masterpiece/design-Reference/Desktop_example_1.jpg
+	    - /Users/dima/Git/vibecoding/masterpiece/design-Reference/Desktop_example_2.jpg
+**Mobile**   - /Users/dima/Git/vibecoding/masterpiece/design-Reference/Mobile_Example_1.jpg
+	    - /Users/dima/Git/vibecoding/masterpiece/design-Reference/Mobile_Example_2.jpg
+
+
+Application Design & Wireframe
+The web application is a quiz game where users are tested on their knowledge of famous paintings. The app will have three difficulty levels. All data will be fetched from a Supabase backend.
+The application will have a clean, modern, and centered layout with Skeuomorphic Design. It consists of three main views
+1. Start View:
+- Header: "Guess the Masterpiece"
+- Buttons: Four large, distinct buttons to select the difficulty: "Neophyte," "Artisan,", "Master" and "Mix".
+
+2. Quiz View:
+- Top Bar: A progress bar showing "Question X of 10".
+- Image Display: A large, high-quality container to display the painting image.
+- Question Text: The question will appear below the image (e.g., "Which artist painted this work?").
+- Answer Options: Four clickable buttons, arranged in a 2x2 grid or a vertical list, each showing a potential answer.
+    On-click, buttons will give immediate feedback: green for correct, red for incorrect. After a brief delay, the  next question will load automatically.
+- Results View:
+- Header: "Quiz Complete!"
+- Score Display: A large text element showing the final score, e.g., "Your Score: 8 / 10".
+- Call to Action: A "Play Again" button that takes the user back to the Start View.
+
+**File Structure and Code:**
