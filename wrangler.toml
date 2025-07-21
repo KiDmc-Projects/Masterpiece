@@ -1,0 +1,17 @@
+# Wrangler configuration for Guess the Masterpiece Quiz App  
+name = "masterpiece-quiz-prod"
+compatibility_date = "2024-09-25" 
+compatibility_flags = ["nodejs_compat"]
+main = ".svelte-kit/cloudflare-tmp/_worker.js"
+account_id = "25a2df56c26faf86bc9de7a9f31fbc9a"
+
+# Assets configuration for SvelteKit
+assets = { directory = ".svelte-kit/output/client", binding = "ASSETS" }
+
+# Environment variables
+[vars]
+PUBLIC_SUPABASE_URL = "https://cuswcehfodpfgbjvlrnp.supabase.co"
+PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1c3djZWhmb2RwZmdianZscm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMwMDQ4MDYsImV4cCI6MjA2ODU4MDgwNn0.YZSrz5Fwewk4w79cmkX3YZJtcQvvFqPKnc8wqAPwSaU"
+PUBLIC_SUPABASE_STORAGE_BUCKET = "artwork-images"
+VITE_APP_NAME = "Masterpiece"
+VITE_APP_VERSION = "1.0.0"
