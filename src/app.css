@@ -31,11 +31,11 @@ body {
 }
 
 .btn-answer.correct {
-	@apply bg-primary-orange border-primary-orange text-white;
+	@apply bg-green-500 border-green-500 text-white;
 }
 
 .btn-answer.incorrect {
-	@apply bg-primary-gray border-primary-gray text-white;
+	@apply bg-red-500 border-red-500 text-white;
 }
 
 /* Card styles */

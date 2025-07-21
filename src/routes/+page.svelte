@@ -26,7 +26,7 @@
 			id: 2,
 			name: 'Artisan',
 			description: 'For art enthusiasts',
-			color: 'bg-blue-500',
+			color: 'bg-teal-500',
 			icon: 'palette'
 		},
 		{

@@ -21,12 +21,11 @@ export async function getDifficultyLevels() {
 export async function getQuestionsByDifficulty(difficultyId, limit = 10, language = 'ru') {
 	console.log('Fetching questions for difficulty:', difficultyId);
 	
-	// Get artworks for this difficulty level
+	// Get artworks for this difficulty level - fetch more than needed to allow shuffling
 	const { data: artworksData, error: artworksError } = await supabase
 		.from('artworks')
 		.select('*')
-		.eq('difficulty_level', difficultyId)
-		.limit(limit);
+		.eq('difficulty_level', difficultyId);
 	
 	console.log('Artworks query result:', { artworksData, artworksError });
 	
@@ -42,8 +41,12 @@ export async function getQuestionsByDifficulty(difficultyId, limit = 10, languag
 	
 	console.log(`Found ${artworksData.length} artworks for difficulty ${difficultyId}`);
 	
-	// Build questions from artworks (simplified - no complex joins needed)
-	const questions = artworksData.map(artwork => {
+	// Shuffle artworks and limit to requested amount
+	const shuffledArtworks = artworksData.sort(() => Math.random() - 0.5).slice(0, limit);
+	console.log(`Selected ${shuffledArtworks.length} random artworks for quiz`);
+	
+	// Build questions from shuffled artworks (simplified - no complex joins needed)
+	const questions = shuffledArtworks.map(artwork => {
 		const isRussian = language === 'ru';
 		const title = isRussian ? artwork.title_ru : artwork.title_en;
 		const artist = isRussian ? artwork.artist_name_ru : artwork.artist_name_en;
@@ -326,11 +329,10 @@ export async function testSupabaseConnection() {
 export async function getMixQuestions(limit = 10, language = 'ru') {
 	console.log('Fetching mix questions for language:', language);
 	
-	// Get random artworks from all difficulty levels
+	// Get all artworks from all difficulty levels for maximum randomization
 	const { data: artworksData, error: artworksError } = await supabase
 		.from('artworks')
-		.select('*')
-		.limit(limit * 2); // Get more to randomize
+		.select('*');
 
 	if (artworksError || !artworksData || artworksData.length === 0) {
 		console.error('Error fetching mix artworks:', artworksError);

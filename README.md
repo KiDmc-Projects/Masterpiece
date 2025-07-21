@@ -49,7 +49,7 @@ The application features a clean, modern interface with:
 
 - **Skeuomorphic Elements**: Subtle shadows and depth
 - **Responsive Layout**: Mobile-first design approach
-- **Color Palette**: Orange primary (#E85A4F), neutral grays
+- **Color Palette**: Ocean blue primary (#0ea5e9), neutral grays
 - **Typography**: System font stack for optimal readability
 - **Interactive States**: Hover effects and smooth transitions
 

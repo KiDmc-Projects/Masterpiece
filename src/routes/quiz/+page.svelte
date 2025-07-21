@@ -173,7 +173,7 @@
 	<div class="max-w-6xl mx-auto mb-8">
 		<div class="flex items-center justify-between mb-4">
 			<button 
-				class="btn-secondary px-4 py-2 text-sm"
+				class="btn-primary px-4 py-2 text-sm"
 				on:click={goHome}
 			>
 				← Home
@@ -261,7 +261,7 @@
 						<div class="mt-6 flex justify-end items-center">
 							{#if showResult}
 								<button 
-									class="btn-primary px-6 py-2"
+									class="btn-primary px-4 py-2 text-sm"
 									on:click={nextQuestion}
 								>
 									{currentQuestion >= totalQuestions ? 'View Results' : 'Next Question'}

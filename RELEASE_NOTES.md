@@ -42,7 +42,7 @@
 
 #### **Design System**
 - **Custom button components** with hover states and icons
-- **Consistent color palette** (Primary Orange: #E85A4F)
+- **Consistent color palette** (Primary Blue: #0ea5e9)
 - **Typography hierarchy** with Inter font family
 - **Card-based layouts** with subtle shadows
 - **Smooth animations** and transitions (200ms duration)

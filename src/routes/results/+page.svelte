@@ -85,7 +85,7 @@
 								cx="60" 
 								cy="60" 
 								r="50" 
-								stroke="#E85A4F" 
+								stroke="#0ea5e9" 
 								stroke-width="8" 
 								fill="none"
 								stroke-dasharray="314"
@@ -127,15 +127,15 @@
 				<!-- Stats -->
 				<div class="grid grid-cols-3 gap-4 text-center border-t pt-6">
 					<div>
-						<div class="text-2xl font-bold text-primary-orange">{score}</div>
+						<div class="text-3xl font-bold text-green-500">{score}</div>
 						<div class="text-sm text-text-secondary">Correct</div>
 					</div>
 					<div>
-						<div class="text-2xl font-bold text-red-500">{total - score}</div>
+						<div class="text-3xl font-bold text-red-500">{total - score}</div>
 						<div class="text-sm text-text-secondary">Incorrect</div>
 					</div>
 					<div>
-						<div class="text-2xl font-bold text-blue-500">{percentage}%</div>
+						<div class="text-3xl font-bold text-primary-orange">{percentage}%</div>
 						<div class="text-sm text-text-secondary">Accuracy</div>
 					</div>
 				</div>
@@ -162,9 +162,9 @@
 			</p>
 			<div class="flex flex-wrap gap-2 justify-center">
 				<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">🌱 Neophyte</span>
-				<span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">🎨 Artisan</span>
+				<span class="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm">🎨 Artisan</span>
 				<span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">👑 Master</span>
-				<span class="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">🔄 Mix</span>
+				<span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">🔄 Mix</span>
 			</div>
 		</div>
 	</div>
