@@ -14,6 +14,7 @@ dist/
 .vercel/
 .netlify/
 .cloudflare/
+.wrangler/
 
 # Environment variables
 .env
