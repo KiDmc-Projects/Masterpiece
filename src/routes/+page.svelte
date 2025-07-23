@@ -75,7 +75,7 @@
 		<div class="mb-12 relative">
 			<!-- Language Switcher - repositioned -->
 			<div class="absolute top-0 right-0">
-				<div class="flex items-center space-x-1 bg-white rounded-lg shadow-md p-1">
+				<div class="flex items-center space-x-1 bg-white/85 backdrop-blur-sm rounded-lg shadow-md p-1 border border-white/20">
 					<span class="text-xs text-text-secondary font-medium px-2">Language:</span>
 					<button 
 						class="px-2 py-1 rounded text-xs font-medium transition-colors duration-200 {currentLanguage === 'ru' ? 'bg-primary-orange text-white' : 'text-text-secondary hover:bg-gray-100'}"
@@ -104,7 +104,7 @@
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
 			{#each difficulties as difficulty}
 				<button
-					class="bg-white rounded-2xl shadow-md hover:shadow-lg p-6 transition-all duration-300 cursor-pointer group border border-gray-100 hover:border-gray-200"
+					class="bg-white/85 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-lg p-6 transition-all duration-300 cursor-pointer group border border-white/20 hover:border-white/40"
 					on:click={() => startQuiz(difficulty)}
 				>
 					<div class="flex items-center space-x-4 text-left">

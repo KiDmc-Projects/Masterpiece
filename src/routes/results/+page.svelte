@@ -153,7 +153,7 @@
 		</div>
 
 		<!-- Encouragement -->
-		<div class="bg-white/50 rounded-xl p-6 backdrop-blur-sm">
+		<div class="bg-white/85 rounded-xl p-6 backdrop-blur-sm border border-white/20">
 			<h3 class="text-lg font-semibold text-text-primary mb-2">
 				Ready for More?
 			</h3>

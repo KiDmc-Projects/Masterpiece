@@ -15,6 +15,11 @@
 	let currentQuestionData = null;
 	let autoAdvanceTimer = null;
 	
+	// Timer state
+	let timeLeft = 10;
+	let questionTimer = null;
+	let isTimerActive = false;
+	
 	// Get difficulty and language from URL params
 	$: difficulty = $page.url.searchParams.get('difficulty') || '1';
 	$: level = $page.url.searchParams.get('level') || 'neophyte';
@@ -52,6 +57,7 @@
 			if (questions.length > 0) {
 				currentQuestionData = questions[0];
 				updateAnswers();
+				startTimer(); // Start timer for first question
 				console.log('Current question data:', currentQuestionData);
 			} else {
 				console.error('No questions loaded - database might be empty');
@@ -69,6 +75,7 @@
 					explanation: 'Database is empty. Please run the SQL statements to populate your artwork data.'
 				};
 				updateAnswers();
+				startTimer(); // Start timer for fallback question
 			}
 		} catch (error) {
 			console.error('Error loading questions:', error);
@@ -86,6 +93,7 @@
 				explanation: 'Error connecting to database: ' + error.message
 			};
 			updateAnswers();
+			startTimer(); // Start timer for error fallback question
 		} finally {
 			isLoading = false;
 		}
@@ -113,9 +121,37 @@
 		}
 	}
 
+	function startTimer() {
+		timeLeft = 10;
+		isTimerActive = true;
+		
+		questionTimer = setInterval(() => {
+			timeLeft--;
+			
+			if (timeLeft <= 0) {
+				// Timer expired - treat as incorrect answer
+				stopTimer();
+				showResult = true;
+				// Auto-advance after 2 seconds
+				autoAdvanceTimer = setTimeout(() => {
+					nextQuestion();
+				}, 2000);
+			}
+		}, 1000);
+	}
+
+	function stopTimer() {
+		if (questionTimer) {
+			clearInterval(questionTimer);
+			questionTimer = null;
+		}
+		isTimerActive = false;
+	}
+
 	function selectAnswer(answer) {
 		if (showResult) return;
 		
+		stopTimer(); // Stop the question timer
 		selectedAnswer = answer;
 		showResult = true;
 		
@@ -142,6 +178,9 @@
 			autoAdvanceTimer = null;
 		}
 		
+		// Stop any existing question timer
+		stopTimer();
+		
 		if (currentQuestion >= totalQuestions || currentQuestion >= questions.length) {
 			// Go to results page
 			goto(`/results?score=${score}&total=${totalQuestions}&level=${level}`);
@@ -153,6 +192,7 @@
 			if (questions[currentQuestion - 1]) {
 				currentQuestionData = questions[currentQuestion - 1];
 				updateAnswers();
+				startTimer(); // Start timer for new question
 			}
 		}
 	}
@@ -173,7 +213,7 @@
 	<div class="max-w-6xl mx-auto mb-8">
 		<div class="flex items-center justify-between mb-4">
 			<button 
-				class="btn-primary px-4 py-2 text-sm"
+				class="btn-primary px-4 py-2 text-sm rounded-xl transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-orange/30"
 				on:click={goHome}
 			>
 				← Home
@@ -181,6 +221,33 @@
 			<div class="text-center">
 				<h2 class="text-lg font-semibold text-text-primary capitalize">{level} Level</h2>
 				<p class="text-text-secondary">Question {currentQuestion} of {totalQuestions}</p>
+				<!-- Timer - Fixed container to prevent jump -->
+				<div class="mt-2 h-12 flex justify-center">
+					{#if isTimerActive && !showResult}
+						<div class="w-12 h-12 relative">
+							<svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 40 40">
+								<!-- Background circle -->
+								<circle cx="20" cy="20" r="16" stroke="#E5E7EB" stroke-width="3" fill="none"/>
+								<!-- Timer circle -->
+								<circle 
+									cx="20" 
+									cy="20" 
+									r="16" 
+									stroke={timeLeft <= 4 ? "#EF4444" : "#FF6B35"} 
+									stroke-width="3" 
+									fill="none" 
+									stroke-dasharray="100.53" 
+									stroke-dashoffset={100.53 - (timeLeft / 10) * 100.53}
+									stroke-linecap="round"
+									class="transition-all duration-1000 ease-linear"
+								/>
+							</svg>
+							<div class="absolute inset-0 flex items-center justify-center">
+								<span class="text-sm font-bold {timeLeft <= 4 ? 'text-red-500' : 'text-primary-orange'}">{timeLeft}</span>
+							</div>
+						</div>
+					{/if}
+				</div>
 			</div>
 			<div class="text-right">
 				<p class="text-sm text-text-secondary">Score</p>
@@ -236,7 +303,7 @@
 									disabled={showResult}
 								>
 									<div class="flex items-center space-x-3">
-										<span class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold">
+										<span class="w-8 h-8 rounded-full bg-white/60 backdrop-blur-sm border border-white/40 flex items-center justify-center text-sm font-semibold shadow-sm">
 											{String.fromCharCode(65 + index)}
 										</span>
 										<span class="flex-1 text-left">{answer}</span>
@@ -257,19 +324,6 @@
 							</div>
 						{/if}
 
-						<!-- Navigation -->
-						<div class="mt-6 flex justify-end items-center">
-							{#if showResult}
-								<button 
-									class="btn-primary px-4 py-2 text-sm"
-									on:click={nextQuestion}
-								>
-									{currentQuestion >= totalQuestions ? 'View Results' : 'Next Question'}
-								</button>
-							{:else}
-								<p class="text-text-secondary text-sm">Select an answer to continue</p>
-							{/if}
-						</div>
 					</div>
 				</div>
 			</div>
