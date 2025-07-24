@@ -224,21 +224,10 @@
 			console.log('Attempting to upload:', imagePath);
 			const uploadResult = await uploadImage(formData.image_file, imagePath);
 			
-			// 2. Insert artwork data into database (force new ID)
-			// First get the highest ID and add 1
-			const { data: maxIdData } = await supabase
-				.from('artworks')
-				.select('id')
-				.order('id', { ascending: false })
-				.limit(1);
-			
-			const nextId = maxIdData && maxIdData.length > 0 ? maxIdData[0].id + 1 : 1;
-			console.log('Using ID:', nextId);
-			
+			// 2. Insert artwork data into database (let database auto-generate ID)
 			const { data, error } = await supabase
 				.from('artworks')
 				.insert([{
-					id: nextId,
 					title_en: formData.title_en,
 					title_ru: formData.title_ru || formData.title_en,
 					artist_name_en: formData.artist_name_en,
