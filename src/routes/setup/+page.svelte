@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
-	import { supabase } from '$lib/supabase.js';
+	import { supabase, createTables } from '$lib/supabase.js';
 	
 	let status = 'Testing connection...';
 	let logs = [];
@@ -94,6 +94,26 @@
 		}
 	}
 	
+	async function createDatabaseTables() {
+		addLog('🚀 Creating database tables with metadata columns...');
+		
+		try {
+			const result = await createTables();
+			
+			if (result) {
+				addLog('✅ All tables created successfully!');
+				addLog('✅ Metadata columns (art_movement, nationality, time_period) added to artworks table');
+				status = 'Tables created successfully';
+			} else {
+				addLog('❌ Failed to create tables - check Supabase permissions');
+				status = 'Table creation failed';
+			}
+		} catch (err) {
+			addLog(`❌ Error creating tables: ${err.message}`);
+			status = 'Table creation failed';
+		}
+	}
+
 	async function checkArtworksData() {
 		addLog('Checking artworks data...');
 		
@@ -113,6 +133,16 @@
 			if (allArtworks && allArtworks.length > 0) {
 				addLog('First artwork:');
 				addLog(JSON.stringify(allArtworks[0], null, 2));
+				
+				// Check if metadata columns exist
+				const firstArtwork = allArtworks[0];
+				if (firstArtwork.hasOwnProperty('art_movement')) {
+					addLog('✅ Metadata columns detected in artworks table');
+					const withMetadata = allArtworks.filter(a => a.art_movement && a.nationality && a.time_period);
+					addLog(`📊 ${withMetadata.length}/${allArtworks.length} artworks have complete metadata`);
+				} else {
+					addLog('❌ Metadata columns missing - need to create tables with new schema');
+				}
 				
 				// Check by difficulty levels
 				for (let diff = 1; diff <= 3; diff++) {
@@ -162,6 +192,13 @@
 					on:click={testConnection}
 				>
 					Test Connection
+				</button>
+				
+				<button 
+					class="btn-primary mr-3"
+					on:click={createDatabaseTables}
+				>
+					🚀 Create Database Tables
 				</button>
 				
 				<button 

@@ -9,7 +9,7 @@ This is a quiz application called "Guess the Masterpiece" where users test their
 ## Technology Stack
 
 - **Framework:** SvelteKit
-- **Styling:** Tailwind CSS  
+- **Styling:** Tailwind CSS
 - **Backend/Database:** Supabase (database and image storage)
 - **Serverless Functions:** Supabase Edge Functions
 - **Deployment:** Cloudflare Pages
@@ -17,6 +17,7 @@ This is a quiz application called "Guess the Masterpiece" where users test their
 ## Project Structure
 
 The project is currently in initial setup phase. The codebase contains:
+
 - `Project Overview` - Complete project specifications and requirements
 - `design-Reference/` - UI/UX design examples for desktop and mobile layouts
 
@@ -39,6 +40,7 @@ The application follows a three-view structure:
 ## Setup Instructions
 
 This project needs initial SvelteKit setup:
+
 1. Initialize SvelteKit project
 2. Configure Tailwind CSS
 3. Set up Supabase integration

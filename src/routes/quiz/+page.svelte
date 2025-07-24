@@ -26,8 +26,12 @@
 	$: selectedLang = $page.url.searchParams.get('lang') || 'ru';
 
 	let answers = [];
+	let quizAnswers = []; // Store user answers for review
 
 	onMount(async () => {
+		// Clear any previous quiz answers
+		sessionStorage.removeItem('quizAnswers');
+		
 		try {
 			console.log('Loading questions for difficulty:', difficulty);
 			console.log('Supabase URL:', import.meta.env.VITE_PUBLIC_SUPABASE_URL || 'NOT SET');
@@ -122,6 +126,11 @@
 	}
 
 	function startTimer() {
+		// Timer only active on Master difficulty (level 3)
+		if (difficulty !== '3') {
+			return;
+		}
+		
 		timeLeft = 10;
 		isTimerActive = true;
 		
@@ -131,6 +140,7 @@
 			if (timeLeft <= 0) {
 				// Timer expired - treat as incorrect answer
 				stopTimer();
+				selectedAnswer = ''; // No answer selected
 				showResult = true;
 				// Auto-advance after 2 seconds
 				autoAdvanceTimer = setTimeout(() => {
@@ -172,6 +182,20 @@
 	}
 
 	function nextQuestion() {
+		// Store current answer for review
+		if (currentQuestionData) {
+			quizAnswers.push({
+				questionNumber: currentQuestion,
+				paintingTitle: currentQuestionData.painting_title,
+				paintingArtist: currentQuestionData.painting_artist,
+				imageUrl: currentQuestionData.image_url,
+				userAnswer: selectedAnswer || 'No answer (time expired)',
+				correctAnswer: currentQuestionData.correct_answer,
+				isCorrect: selectedAnswer === currentQuestionData.correct_answer,
+				explanation: currentQuestionData.explanation
+			});
+		}
+
 		// Clear auto-advance timer
 		if (autoAdvanceTimer) {
 			clearTimeout(autoAdvanceTimer);
@@ -182,6 +206,13 @@
 		stopTimer();
 		
 		if (currentQuestion >= totalQuestions || currentQuestion >= questions.length) {
+			// Save quiz answers to sessionStorage for review
+			try {
+				sessionStorage.setItem('quizAnswers', JSON.stringify(quizAnswers));
+			} catch (error) {
+				console.error('Error saving quiz answers:', error);
+			}
+			
 			// Go to results page
 			goto(`/results?score=${score}&total=${totalQuestions}&level=${level}`);
 		} else {
@@ -198,6 +229,8 @@
 	}
 
 	function goHome() {
+		// Clear quiz answers when going back to home
+		sessionStorage.removeItem('quizAnswers');
 		goto('/');
 	}
 
@@ -223,7 +256,7 @@
 				<p class="text-text-secondary">Question {currentQuestion} of {totalQuestions}</p>
 				<!-- Timer - Fixed container to prevent jump -->
 				<div class="mt-2 h-12 flex justify-center">
-					{#if isTimerActive && !showResult}
+					{#if difficulty === '3' && isTimerActive && !showResult}
 						<div class="w-12 h-12 relative">
 							<svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 40 40">
 								<!-- Background circle -->
@@ -303,7 +336,7 @@
 									disabled={showResult}
 								>
 									<div class="flex items-center space-x-3">
-										<span class="w-8 h-8 rounded-full bg-white/60 backdrop-blur-sm border border-white/40 flex items-center justify-center text-sm font-semibold shadow-sm">
+										<span class="w-8 h-8 rounded-full bg-white/70 backdrop-blur-sm border-2 border-gray-300/70 flex items-center justify-center text-sm font-semibold shadow-md">
 											{String.fromCharCode(65 + index)}
 										</span>
 										<span class="flex-1 text-left">{answer}</span>

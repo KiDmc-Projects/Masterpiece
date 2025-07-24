@@ -15,14 +15,36 @@
 	let uploading = false;
 	let message = '';
 	let existingArtworks = [];
+	let filteredArtworks = [];
 	let dragActive = false;
 	let csvFile = null;
 	let csvUploading = false;
 	let showBulkImport = false;
+	let showBulkArtistUpload = false;
 	let editingArtwork = null;
 	let isAuthenticated = false;
 	let passwordInput = '';
 	let showPasswordError = false;
+
+	// 🔍 Filtering and Pagination
+	let filters = {
+		difficulty_level: '',
+		artist_name: ''
+	};
+	let currentPage = 1;
+	let itemsPerPage = 50;
+	let totalPages = 1;
+	let allArtists = [];
+
+	// 📦 Bulk Artist Upload
+	let bulkUpload = {
+		artist_name_en: '',
+		artist_name_ru: '',
+		artworks: [
+			{ title_en: '', title_ru: '', year_created: '', difficulty_level: 1, image_file: null }
+		]
+	};
+	let bulkUploading = false;
 	
 	const ADMIN_PASSWORD = '054864081';
 	
@@ -72,7 +94,74 @@
 		
 		if (!error && data) {
 			existingArtworks = data;
+			await loadAllArtists();
+			applyFilters();
 		}
+	}
+
+	// 🎨 Load unique artists for auto-complete
+	async function loadAllArtists() {
+		const uniqueArtists = [...new Set(existingArtworks.map(artwork => artwork.artist_name_en))];
+		allArtists = uniqueArtists.sort();
+	}
+
+	// 🔍 Apply filters and pagination
+	function applyFilters() {
+		let filtered = existingArtworks;
+
+		// Filter by difficulty level
+		if (filters.difficulty_level) {
+			filtered = filtered.filter(artwork => 
+				artwork.difficulty_level === parseInt(filters.difficulty_level)
+			);
+		}
+
+		// Filter by artist name
+		if (filters.artist_name) {
+			filtered = filtered.filter(artwork => 
+				artwork.artist_name_en.toLowerCase().includes(filters.artist_name.toLowerCase()) ||
+				artwork.artist_name_ru.toLowerCase().includes(filters.artist_name.toLowerCase())
+			);
+		}
+
+		// Calculate pagination
+		totalPages = Math.ceil(filtered.length / itemsPerPage);
+		if (currentPage > totalPages && totalPages > 0) {
+			currentPage = 1;
+		}
+
+		// Apply pagination
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
+		filteredArtworks = filtered.slice(startIndex, endIndex);
+	}
+
+	// 📄 Pagination functions
+	function goToPage(page) {
+		if (page >= 1 && page <= totalPages) {
+			currentPage = page;
+			applyFilters();
+		}
+	}
+
+	function nextPage() {
+		if (currentPage < totalPages) {
+			currentPage++;
+			applyFilters();
+		}
+	}
+
+	function prevPage() {
+		if (currentPage > 1) {
+			currentPage--;
+			applyFilters();
+		}
+	}
+
+	// 🔍 Filter change handlers
+	function onFilterChange() {
+		currentPage = 1; // Reset to first page when filtering
+		applyFilters();
 	}
 	
 	function handleFileSelect(event) {
@@ -388,6 +477,114 @@
 			csvUploading = false;
 		}
 	}
+
+	// 📦 Bulk Artist Upload Functions
+	function addArtworkToBulk() {
+		bulkUpload.artworks = [...bulkUpload.artworks, {
+			title_en: '',
+			title_ru: '',
+			year_created: '',
+			difficulty_level: 1,
+			image_file: null
+		}];
+	}
+
+	function removeArtworkFromBulk(index) {
+		bulkUpload.artworks = bulkUpload.artworks.filter((_, i) => i !== index);
+	}
+
+	function handleBulkImageSelect(event, index) {
+		const file = event.target.files[0];
+		if (file) {
+			bulkUpload.artworks[index].image_file = file;
+		}
+	}
+
+	async function submitBulkArtist() {
+		if (!bulkUpload.artist_name_en || !bulkUpload.artist_name_ru) {
+			message = '❌ Please fill artist names in both languages';
+			return;
+		}
+
+		// Validate all artworks have required fields
+		for (let i = 0; i < bulkUpload.artworks.length; i++) {
+			const artwork = bulkUpload.artworks[i];
+			if (!artwork.title_en || !artwork.image_file) {
+				message = `❌ Artwork ${i + 1}: Please fill title and select image`;
+				return;
+			}
+		}
+
+		bulkUploading = true;
+		message = `Uploading ${bulkUpload.artworks.length} artworks...`;
+
+		let successCount = 0;
+		let errorCount = 0;
+
+		try {
+			for (let i = 0; i < bulkUpload.artworks.length; i++) {
+				const artwork = bulkUpload.artworks[i];
+				
+				try {
+					// 1. Upload image
+					const difficultyFolder = getDifficultyFolder(artwork.difficulty_level);
+					const timestamp = Date.now();
+					const cleanArtist = bulkUpload.artist_name_en.toLowerCase()
+						.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+						.replace(/[^a-z0-9\s]/g, '')
+						.replace(/\s+/g, '_');
+					const cleanTitle = artwork.title_en.toLowerCase()
+						.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+						.replace(/[^a-z0-9\s]/g, '')
+						.replace(/\s+/g, '_');
+					const fileName = `${cleanArtist}_${cleanTitle}_${timestamp}_${i}.jpg`;
+					const imagePath = `${difficultyFolder}/${fileName}`;
+
+					await uploadImage(artwork.image_file, imagePath);
+
+					// 2. Insert artwork data
+					const { error } = await supabase
+						.from('artworks')
+						.insert([{
+							title_en: artwork.title_en,
+							title_ru: artwork.title_ru || artwork.title_en,
+							artist_name_en: bulkUpload.artist_name_en,
+							artist_name_ru: bulkUpload.artist_name_ru,
+							year_created: artwork.year_created ? parseInt(artwork.year_created) : null,
+							image_path: imagePath,
+							difficulty_level: artwork.difficulty_level
+						}]);
+
+					if (error) throw error;
+					successCount++;
+
+				} catch (artworkError) {
+					console.error(`Error uploading artwork ${i + 1}:`, artworkError);
+					errorCount++;
+				}
+
+				message = `Uploading... ${successCount + errorCount}/${bulkUpload.artworks.length}`;
+			}
+
+			message = `✅ Bulk upload complete: ${successCount} success, ${errorCount} errors`;
+			
+			// Reset form
+			bulkUpload = {
+				artist_name_en: '',
+				artist_name_ru: '',
+				artworks: [
+					{ title_en: '', title_ru: '', year_created: '', difficulty_level: 1, image_file: null }
+				]
+			};
+			
+			loadExistingArtworks();
+
+		} catch (error) {
+			message = `❌ Bulk upload error: ${error.message}`;
+		} finally {
+			bulkUploading = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -683,13 +880,236 @@ The Starry Night,Звёздная ночь,Vincent van Gogh,Винсент ва�
 			</div>
 		{/if}
 
-		<!-- Existing Artworks (Bottom of page) -->
+		<!-- Bulk Artist Upload Section -->
+		{#if showBulkArtistUpload}
+			<div class="max-w-6xl mx-auto mb-8">
+				<div class="card">
+					<div class="flex items-center justify-between mb-6">
+						<h2 class="text-xl font-semibold">📦 Bulk Artist Upload</h2>
+						<button 
+							class="text-gray-500 hover:text-gray-700"
+							on:click={() => showBulkArtistUpload = false}
+						>
+							✕ Close
+						</button>
+					</div>
+
+					<!-- Artist Information -->
+					<div class="mb-6 p-4 bg-blue-50 rounded-lg">
+						<h3 class="font-semibold mb-4">Artist Information</h3>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div>
+								<label class="block text-sm font-semibold text-text-primary mb-1">
+									Artist Name (English) *
+								</label>
+								<input 
+									type="text" 
+									bind:value={bulkUpload.artist_name_en}
+									placeholder="e.g., Claude Monet"
+									class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary-orange focus:outline-none"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-semibold text-text-primary mb-1">
+									Artist Name (Russian) *
+								</label>
+								<input 
+									type="text" 
+									bind:value={bulkUpload.artist_name_ru}
+									placeholder="e.g., Клод Моне"
+									class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary-orange focus:outline-none"
+								/>
+							</div>
+						</div>
+					</div>
+
+					<!-- Artworks -->
+					<div class="mb-6">
+						<div class="flex items-center justify-between mb-4">
+							<h3 class="font-semibold">Artworks ({bulkUpload.artworks.length})</h3>
+							<button 
+								class="btn-secondary text-sm"
+								on:click={addArtworkToBulk}
+							>
+								+ Add Artwork
+							</button>
+						</div>
+
+						{#each bulkUpload.artworks as artwork, index}
+							<div class="mb-4 p-4 border rounded-lg bg-gray-50">
+								<div class="flex items-center justify-between mb-3">
+									<h4 class="font-medium">Artwork {index + 1}</h4>
+									{#if bulkUpload.artworks.length > 1}
+										<button 
+											class="text-red-500 hover:text-red-700 text-sm"
+											on:click={() => removeArtworkFromBulk(index)}
+										>
+											🗑️ Remove
+										</button>
+									{/if}
+								</div>
+
+								<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+									<div>
+										<label class="block text-sm font-medium mb-1">Title (English) *</label>
+										<input 
+											type="text" 
+											bind:value={artwork.title_en}
+											placeholder="Water Lilies"
+											class="w-full p-2 border border-gray-300 rounded focus:border-primary-orange focus:outline-none"
+										/>
+									</div>
+									<div>
+										<label class="block text-sm font-medium mb-1">Title (Russian)</label>
+										<input 
+											type="text" 
+											bind:value={artwork.title_ru}
+											placeholder="Кувшинки"
+											class="w-full p-2 border border-gray-300 rounded focus:border-primary-orange focus:outline-none"
+										/>
+									</div>
+									<div>
+										<label class="block text-sm font-medium mb-1">Year</label>
+										<input 
+											type="number" 
+											bind:value={artwork.year_created}
+											placeholder="1919"
+											class="w-full p-2 border border-gray-300 rounded focus:border-primary-orange focus:outline-none"
+										/>
+									</div>
+									<div>
+										<label class="block text-sm font-medium mb-1">Difficulty</label>
+										<select 
+											bind:value={artwork.difficulty_level}
+											class="w-full p-2 border border-gray-300 rounded focus:border-primary-orange focus:outline-none"
+										>
+											<option value={1}>1 - Neophyte</option>
+											<option value={2}>2 - Artisan</option>
+											<option value={3}>3 - Master</option>
+										</select>
+									</div>
+								</div>
+
+								<div class="mt-3">
+									<label class="block text-sm font-medium mb-1">Image *</label>
+									<input 
+										type="file" 
+										accept="image/*"
+										on:change={(e) => handleBulkImageSelect(e, index)}
+										class="w-full p-2 border border-gray-300 rounded focus:border-primary-orange focus:outline-none"
+									/>
+									{#if artwork.image_file}
+										<p class="text-xs text-green-600 mt-1">✅ {artwork.image_file.name}</p>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+
+					<button 
+						class="btn-primary w-full py-3"
+						on:click={submitBulkArtist}
+						disabled={bulkUploading}
+					>
+						{bulkUploading ? 'Uploading...' : `📦 Upload ${bulkUpload.artworks.length} Artworks`}
+					</button>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Enhanced Existing Artworks Section -->
 		<div class="max-w-6xl mx-auto">
 			<div class="card">
-				<h2 class="text-xl font-semibold mb-6">Existing Artworks ({existingArtworks.length})</h2>
+				<div class="flex items-center justify-between mb-6">
+					<h2 class="text-xl font-semibold">Existing Artworks ({existingArtworks.length})</h2>
+					<button 
+						class="btn-primary"
+						on:click={() => showBulkArtistUpload = true}
+					>
+						📦 Bulk Artist Upload
+					</button>
+				</div>
+
+				<!-- 🔍 Filters -->
+				<div class="mb-6 p-4 bg-gray-50 rounded-lg">
+					<h3 class="font-semibold mb-3">🔍 Filters</h3>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div>
+							<label class="block text-sm font-medium mb-1">Difficulty Level</label>
+							<select 
+								bind:value={filters.difficulty_level}
+								on:change={onFilterChange}
+								class="w-full p-2 border border-gray-300 rounded focus:border-primary-orange focus:outline-none"
+							>
+								<option value="">All Levels</option>
+								<option value="1">1 - Neophyte</option>
+								<option value="2">2 - Artisan</option>
+								<option value="3">3 - Master</option>
+							</select>
+						</div>
+						<div>
+							<label class="block text-sm font-medium mb-1">Artist Name</label>
+							<input 
+								type="text" 
+								bind:value={filters.artist_name}
+								on:input={onFilterChange}
+								list="artists-list"
+								placeholder="Search by artist name..."
+								class="w-full p-2 border border-gray-300 rounded focus:border-primary-orange focus:outline-none"
+							/>
+							<datalist id="artists-list">
+								{#each allArtists as artist}
+									<option value={artist}></option>
+								{/each}
+							</datalist>
+						</div>
+						<div class="flex items-end">
+							<button 
+								class="btn-secondary w-full"
+								on:click={() => {
+									filters.difficulty_level = '';
+									filters.artist_name = '';
+									onFilterChange();
+								}}
+							>
+								🔄 Clear Filters
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- 📄 Pagination Info -->
+				<div class="flex items-center justify-between mb-4">
+					<p class="text-sm text-gray-600">
+						Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredArtworks.length)} 
+						of {existingArtworks.filter(artwork => {
+							let match = true;
+							if (filters.difficulty_level) match = match && artwork.difficulty_level === parseInt(filters.difficulty_level);
+							if (filters.artist_name) match = match && (artwork.artist_name_en.toLowerCase().includes(filters.artist_name.toLowerCase()) || artwork.artist_name_ru.toLowerCase().includes(filters.artist_name.toLowerCase()));
+							return match;
+						}).length} artworks
+					</p>
+					<div class="flex items-center space-x-2">
+						<button 
+							class="px-3 py-1 border rounded {currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-50'}"
+							on:click={prevPage}
+							disabled={currentPage === 1}
+						>
+							← Prev
+						</button>
+						<span class="text-sm">Page {currentPage} of {totalPages}</span>
+						<button 
+							class="px-3 py-1 border rounded {currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-50'}"
+							on:click={nextPage}
+							disabled={currentPage === totalPages}
+						>
+							Next →
+						</button>
+					</div>
+				</div>
 				
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{#each existingArtworks as artwork}
+					{#each filteredArtworks as artwork}
 						<div class="bg-gray-50 rounded-lg p-4 {editingArtwork && editingArtwork.id === artwork.id ? 'ring-2 ring-primary-orange' : ''}">
 							<img 
 								src={getImageUrl(artwork.image_path)} 

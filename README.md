@@ -64,23 +64,27 @@ The application features a clean, modern interface with:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/KiDmc-Projects/Masterpiece.git
    cd Masterpiece
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Add your Supabase credentials
    ```
 
 4. **Start development server**
+
    ```bash
    npm run dev
    ```
