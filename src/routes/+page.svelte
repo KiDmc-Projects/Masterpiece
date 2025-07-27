@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { language } from '$lib/language.js';
+	import { initializeSessionTracking, trackPageView, trackDifficultySelection, DIFFICULTY_LEVELS } from '$lib/analytics';
 
 	let currentLanguage = 'ru';
 
@@ -12,6 +13,8 @@
 
 	onMount(() => {
 		language.init();
+		initializeSessionTracking();
+		trackPageView('homepage', currentLanguage);
 	});
 
 	const difficulties = [
@@ -46,7 +49,11 @@
 	];
 
 	function startQuiz(difficulty) {
-		goto(`/quiz?difficulty=${difficulty.id}&level=${difficulty.name.toLowerCase()}&lang=${currentLanguage}`);
+		// Track difficulty selection
+		const difficultyLevel = difficulty.name.toLowerCase();
+		trackDifficultySelection(difficultyLevel, currentLanguage);
+		
+		goto(`/quiz?difficulty=${difficulty.id}&level=${difficultyLevel}&lang=${currentLanguage}`);
 	}
 
 	function switchLanguage(lang) {

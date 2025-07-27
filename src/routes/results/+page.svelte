@@ -3,6 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	import { Fireworks } from 'fireworks-js';
+	import { 
+		trackPageView, 
+		trackQuizCompletion, 
+		getCurrentSessionDuration,
+		calculateGrade 
+	} from '$lib/analytics';
 
 	// Get results from URL params
 	$: score = parseInt($page.url.searchParams.get('score')) || 0;
@@ -25,6 +31,9 @@
 	let fireworks;
 
 	onMount(() => {
+		// Track results page view
+		trackPageView('results', 'ru'); // Default to Russian, could be enhanced to get from params
+		
 		// Load user answers from sessionStorage
 		try {
 			const savedAnswers = sessionStorage.getItem('quizAnswers');
@@ -34,6 +43,11 @@
 		} catch (error) {
 			console.error('Error loading quiz answers:', error);
 		}
+
+		// Track quiz completion with all metrics
+		const sessionDuration = getCurrentSessionDuration();
+		const finalGrade = calculateGrade(score, total);
+		trackQuizCompletion(level, finalGrade, score, total, sessionDuration, 'ru');
 
 		// Start animations
 		startFireworks();

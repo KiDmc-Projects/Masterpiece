@@ -137,3 +137,6 @@ playwright/.cache/
 
 # Design files
 design-Reference/
+
+# Component configuration
+components.json

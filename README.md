@@ -1,4 +1,4 @@
-# Guess the Masterpiece 🎨
+# Masterpiece 🎨
 
 A modern quiz application that tests your knowledge of famous paintings. Challenge yourself across three difficulty levels and discover the world's most celebrated artworks.
 

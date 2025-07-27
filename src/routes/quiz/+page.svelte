@@ -3,6 +3,13 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { getQuestionsByDifficulty, getMixQuestions, supabase } from '$lib/supabase.js';
+	import { 
+		trackPageView, 
+		trackQuestionAnswer, 
+		trackQuizAbandonment, 
+		getCurrentSessionDuration,
+		calculateGrade 
+	} from '$lib/analytics';
 
 	// Quiz state
 	let currentQuestion = 1;
@@ -27,10 +34,14 @@
 
 	let answers = [];
 	let quizAnswers = []; // Store user answers for review
+	let questionStartTime = 0; // Track time spent on each question
 
 	onMount(async () => {
 		// Clear any previous quiz answers
 		sessionStorage.removeItem('quizAnswers');
+		
+		// Track quiz page view
+		trackPageView('quiz', selectedLang);
 		
 		try {
 			console.log('Loading questions for difficulty:', difficulty);
@@ -61,6 +72,7 @@
 			if (questions.length > 0) {
 				currentQuestionData = questions[0];
 				updateAnswers();
+				questionStartTime = Date.now(); // Track question start time
 				startTimer(); // Start timer for first question
 				console.log('Current question data:', currentQuestionData);
 			} else {
@@ -165,10 +177,25 @@
 		selectedAnswer = answer;
 		showResult = true;
 		
+		// Calculate time spent on this question
+		const timeToAnswer = (Date.now() - questionStartTime) / 1000; // in seconds
+		
 		// Check if correct
-		if (answer === currentQuestionData.correct_answer) {
+		const isCorrect = answer === currentQuestionData.correct_answer;
+		if (isCorrect) {
 			score++;
 		}
+		
+		// Track the answer analytics
+		trackQuestionAnswer(
+			currentQuestion,
+			isCorrect,
+			level,
+			currentQuestionData.painting_artist || 'Unknown Artist',
+			currentQuestionData.painting_title || 'Unknown Artwork',
+			timeToAnswer,
+			selectedLang
+		);
 		
 		// Clear any existing timer
 		if (autoAdvanceTimer) {
@@ -223,12 +250,19 @@
 			if (questions[currentQuestion - 1]) {
 				currentQuestionData = questions[currentQuestion - 1];
 				updateAnswers();
+				questionStartTime = Date.now(); // Reset question start time
 				startTimer(); // Start timer for new question
 			}
 		}
 	}
 
 	function goHome() {
+		// Track quiz abandonment if leaving mid-quiz
+		if (currentQuestion < totalQuestions) {
+			const sessionDuration = getCurrentSessionDuration();
+			trackQuizAbandonment(level, currentQuestion, totalQuestions, sessionDuration, selectedLang);
+		}
+		
 		// Clear quiz answers when going back to home
 		sessionStorage.removeItem('quizAnswers');
 		goto('/');
