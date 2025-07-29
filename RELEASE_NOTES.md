@@ -1,5 +1,74 @@
 # 🎨 Masterpiece Quiz - Release Notes
 
+## Version 0.6.0 - Advanced Onboarding & UX Enhancement
+
+_Released: July 29, 2025_
+
+### 🎯 **Major Feature Additions**
+
+#### **🚀 Professional Onboarding Experience**
+
+- **Interactive Onboarding Modal**: Completely redesigned onboarding system replacing static "How to Play" section
+- **Custom Multicolor Icons**: Four beautifully designed SVG icons for each onboarding step (level selection, art questions, feedback, progress tracking)
+- **Step-by-Step Guidance**: Progressive disclosure with visual indicators and smooth transitions
+- **Optimized Icon Display**: Icons scaled to 65-70% of container for perfect visual balance
+- **Intuitive Button Layout**: Consistent "Skip" and "Next/Get Started" button positioning throughout flow
+
+#### **⚙️ Enhanced Settings System**
+
+- **Advanced Quiz Customization**: Comprehensive settings modal with question quantity selector (5, 10, 15, 20 questions)
+- **Real-Time Settings Persistence**: LocalStorage integration for seamless preference management
+- **Backend Integration**: Full implementation connecting settings to actual quiz behavior
+- **Success Notifications**: Professional slide-in notifications with animated feedback
+- **Streamlined UI**: Removed redundant information displays for cleaner interface
+
+#### **🎨 UI/UX Refinements**
+
+- **Quiz Header Improvements**: Replaced text-based HOME button with professional home icon
+- **Interactive Answer States**: Visual feedback system for inactive answer buttons after selection
+- **Typography Enhancement**: Complete migration from Inter to Lato font family across application
+- **Responsive Icon Integration**: Custom SVG icons for settings and navigation elements
+- **Glassmorphism Design**: Consistent backdrop blur effects and transparency across components
+
+### 🔧 **Technical Improvements**
+
+#### **📱 Enhanced User Interface**
+
+- **Component Architecture**: Modular onboarding system with reusable SVG icon components
+- **State Management**: Sophisticated step management with conditional button rendering
+- **Animation System**: Smooth transitions and hover effects throughout onboarding flow
+- **Accessibility**: Improved keyboard navigation and screen reader compatibility
+- **Performance Optimization**: Efficient SVG rendering and minimal bundle impact
+
+#### **⚙️ Settings Infrastructure**
+
+- **URL Parameter Integration**: Seamless question count passing between pages via URL parameters
+- **LocalStorage API**: Robust settings persistence with error handling and fallbacks
+- **Reactive Updates**: Real-time UI updates reflecting current settings state
+- **Backend Synchronization**: Complete integration with quiz generation system
+
+#### **🎯 Icon and Asset Management**
+
+- **Custom SVG Library**: Four professionally designed multicolor icons (level.svg, art.svg, feedback.svg, progress.svg)
+- **Scalable Graphics**: Vector-based icons ensuring crisp display at all sizes
+- **Theme Integration**: Icons designed to complement glassmorphism design system
+- **Efficient Loading**: Inline SVG implementation for optimal performance
+
+### 🐛 **Bug Fixes & Polish**
+
+- **Settings Modal**: Removed redundant "Current setting" information display
+- **Button Consistency**: Fixed onboarding button positioning to maintain layout stability
+- **Icon Scaling**: Proper SVG scaling within containers for optimal visual presentation
+- **State Persistence**: Resolved settings not being applied to actual quiz sessions
+- **Font Rendering**: Complete Inter to Lato font migration across all components
+
+### 🏗️ **Development Improvements**
+
+- **Asset Organization**: Structured icon and image asset management
+- **Component Structure**: Improved separation of concerns in onboarding system
+- **Code Quality**: Enhanced readability and maintainability of modal components
+- **Documentation**: Updated CLAUDE.md with latest feature implementations
+
 ## Version 0.5.2 - Analytics & Project Management Enhancement
 
 _Released: July 27, 2025_

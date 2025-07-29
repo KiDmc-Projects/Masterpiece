@@ -301,7 +301,13 @@ This command executes a comprehensive release workflow specifically for the Mast
    - Create annotated git tag: v{version}
    - Push commits and tags to origin
 
-5. **Cloudflare Deployment**
+5. **GitHub Release Creation**
+   - Create GitHub Release using `gh release create` with comprehensive release notes
+   - Extract key features and improvements from conventional commits
+   - Format release notes with proper markdown and categorization
+   - Include links to live application and technical details
+
+6. **Cloudflare Deployment**
    - Execute: `wrangler pages deploy .svelte-kit/output/static --project-name=masterpiece-quiz-pages`
    - Monitor and report deployment status
 

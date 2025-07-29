@@ -10,10 +10,11 @@
 		getCurrentSessionDuration,
 		calculateGrade 
 	} from '$lib/analytics';
+	import QuizPopover from '$lib/components/QuizPopover.svelte';
 
 	// Quiz state
 	let currentQuestion = 1;
-	let totalQuestions = 10;
+	let totalQuestions = 10; // Default fallback
 	let score = 0;
 	let selectedAnswer = '';
 	let showResult = false;
@@ -27,10 +28,25 @@
 	let questionTimer = null;
 	let isTimerActive = false;
 	
+	// Popover state
+	let showPopover = false;
+	let popoverTitle = '';
+	let popoverDescription = '';
+	
+	
+	let popoverTimer = null;
+	
 	// Get difficulty and language from URL params
 	$: difficulty = $page.url.searchParams.get('difficulty') || '1';
 	$: level = $page.url.searchParams.get('level') || 'neophyte';
 	$: selectedLang = $page.url.searchParams.get('lang') || 'ru';
+	$: {
+		// Update totalQuestions from URL parameter
+		const questionsParam = $page.url.searchParams.get('questions');
+		if (questionsParam) {
+			totalQuestions = parseInt(questionsParam);
+		}
+	}
 
 	let answers = [];
 	let quizAnswers = []; // Store user answers for review
@@ -186,6 +202,9 @@
 			score++;
 		}
 		
+		// Show popover with feedback
+		showAnswerPopover(isCorrect);
+		
 		// Track the answer analytics
 		trackQuestionAnswer(
 			currentQuestion,
@@ -202,10 +221,30 @@
 			clearTimeout(autoAdvanceTimer);
 		}
 		
-		// Auto-advance after 2 seconds
+		// Auto-advance - longer delay for incorrect answers to allow reading
+		const delay = isCorrect ? 2000 : 5000; // 2s for correct, 5s for incorrect
 		autoAdvanceTimer = setTimeout(() => {
 			nextQuestion();
-		}, 2000);
+		}, delay);
+	}
+
+	function showAnswerPopover(isCorrect) {
+		// Only show popover for incorrect answers
+		if (!isCorrect) {
+			popoverTitle = '';
+			popoverDescription = `Correct answer is - <strong>${currentQuestionData.correct_answer}</strong>`;
+			showPopover = true;
+			
+			// Clear any existing popover timer
+			if (popoverTimer) {
+				clearTimeout(popoverTimer);
+			}
+			
+			// Hide popover after 4.5 seconds with fade out (before next question)
+			popoverTimer = setTimeout(() => {
+				showPopover = false;
+			}, 4500);
+		}
 	}
 
 	function nextQuestion() {
@@ -228,6 +267,13 @@
 			clearTimeout(autoAdvanceTimer);
 			autoAdvanceTimer = null;
 		}
+		
+		// Clear popover timer and hide popover for new question
+		if (popoverTimer) {
+			clearTimeout(popoverTimer);
+			popoverTimer = null;
+		}
+		showPopover = false;
 		
 		// Stop any existing question timer
 		stopTimer();
@@ -275,24 +321,30 @@
 	<title>Quiz - Guess the Masterpiece</title>
 </svelte:head>
 
-<div class="min-h-screen p-4">
+<div class="min-h-screen p-2 md:p-4">
 	<!-- Header with Progress -->
-	<div class="max-w-6xl mx-auto mb-8">
-		<div class="flex items-center justify-between mb-4">
+	<div class="max-w-6xl mx-auto mb-4">
+		<div class="flex items-center justify-between mb-2">
+			<!-- Home Icon Button -->
 			<button 
-				class="btn-primary px-4 py-2 text-sm rounded-xl transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-orange/30"
+				class="btn-home-icon w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-orange/30"
 				on:click={goHome}
+				aria-label="Go home"
 			>
-				← Home
+				<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+					<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+				</svg>
 			</button>
-			<div class="text-center">
-				<h2 class="text-lg font-semibold text-text-primary capitalize">{level} Level</h2>
-				<p class="text-text-secondary">Question {currentQuestion} of {totalQuestions}</p>
+
+			<!-- Center Content -->
+			<div class="text-center flex-1">
+				<h2 class="text-base font-semibold text-text-primary capitalize">{level} Level</h2>
+				<p class="text-sm text-text-secondary">Question {currentQuestion} of {totalQuestions}</p>
 				<!-- Timer - Fixed container to prevent jump -->
-				<div class="mt-2 h-12 flex justify-center">
+				<div class="mt-1 h-8 flex justify-center">
 					{#if difficulty === '3' && isTimerActive && !showResult}
-						<div class="w-12 h-12 relative">
-							<svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 40 40">
+						<div class="w-8 h-8 relative">
+							<svg class="w-8 h-8 transform -rotate-90" viewBox="0 0 40 40">
 								<!-- Background circle -->
 								<circle cx="20" cy="20" r="16" stroke="#E5E7EB" stroke-width="3" fill="none"/>
 								<!-- Timer circle -->
@@ -316,9 +368,11 @@
 					{/if}
 				</div>
 			</div>
-			<div class="text-right">
-				<p class="text-sm text-text-secondary">Score</p>
-				<p class="text-xl font-bold text-primary-orange">{score}/{currentQuestion - 1}</p>
+
+			<!-- Score Section -->
+			<div class="text-right w-12 flex flex-col items-center">
+				<p class="text-xs text-text-secondary">Score</p>
+				<p class="text-lg font-bold text-primary-orange">{score}/{currentQuestion - 1}</p>
 			</div>
 		</div>
 		
@@ -339,9 +393,9 @@
 	{:else}
 		<!-- Quiz Content -->
 		<div class="max-w-6xl mx-auto">
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-				<!-- Image Section -->
-				<div class="order-2 lg:order-1">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+				<!-- Image Section - Now first on mobile -->
+				<div class="order-1 lg:order-1 relative">
 					<div class="painting-container">
 						<img 
 							src={currentQuestionData.image_url} 
@@ -349,28 +403,59 @@
 							class="painting-image"
 						/>
 					</div>
+					
+					<!-- Quiz Popover positioned above painting -->
+					<QuizPopover 
+						bind:open={showPopover}
+						title={popoverTitle}
+						description={popoverDescription}
+						width="100%"
+						on:close={() => showPopover = false}
+					>
+						{#if currentQuestionData.explanation}
+							<div class="mt-3 pt-3 border-t border-blue-200/30">
+								<p class="text-sm text-blue-600">
+									💡 {currentQuestionData.explanation}
+								</p>
+							</div>
+						{/if}
+					</QuizPopover>
 				</div>
 
-				<!-- Question Section -->
-				<div class="order-1 lg:order-2">
+				<!-- Question Section - Now second on mobile -->
+				<div class="order-2 lg:order-2">
 					<div class="card h-full flex flex-col">
 						<!-- Question -->
-						<div class="mb-6">
-							<h1 class="text-2xl md:text-3xl font-bold text-text-primary mb-4">
-								{currentQuestionData.question_text}
-							</h1>
+						<div class="mb-4 relative">
+							<div class="flex items-start gap-3 mb-2">
+								<h1 class="text-2xl md:text-3xl font-bold text-text-primary flex-1">
+									{currentQuestionData.question_text}
+								</h1>
+								{#if showPopover}
+									<svg 
+										class="w-7 h-7 text-amber-500 bulb-icon flex-shrink-0 mt-1" 
+										fill="currentColor" 
+										viewBox="-4.93 0 122.88 122.88"
+									>
+										<path d="M44.13,102.06c-1.14,0.03-2.14-0.81-2.3-1.96c-0.17-1.2,0.64-2.31,1.82-2.54c-1.3-7.37-4.85-11.43-8.6-15.72 c-2.92-3.34-5.95-6.81-8.34-11.92c-2.35-5.03-3.64-10.23-3.6-15.63c0.05-5.4,1.42-10.96,4.4-16.71c0.02-0.04,0.04-0.07,0.06-0.11 l0,0c3.91-6.62,9.38-11.04,15.47-13.52c5.11-2.09,10.66-2.8,16.1-2.3c5.42,0.5,10.73,2.2,15.37,4.94 c5.9,3.49,10.75,8.67,13.42,15.21c1.44,3.54,2.42,7.49,2.54,11.82c0.12,4.31-0.62,8.96-2.61,13.88 c-2.66,6.59-6.18,10.68-9.47,14.51c-3.03,3.53-5.85,6.81-7.42,11.84c0.89,0.21,1.59,0.94,1.73,1.9c0.17,1.24-0.7,2.39-1.94,2.56 l-0.77,0.11c-0.14,1.09-0.23,2.26-0.27,3.51l0.25-0.04c1.24-0.17,2.39,0.7,2.56,1.94c0.17,1.24-0.7,2.39-1.94,2.56l-0.78,0.11 c0.01,0.15,0.02,0.3,0.03,0.45l0,0c0.07,0.88,0.08,1.73,0.03,2.54l0.13-0.02c1.25-0.15,2.38,0.74,2.54,1.98 c0.15,1.25-0.74,2.38-1.98,2.54l-1.68,0.21c-1.2,3.11-3.34,5.48-5.87,6.94c-1.74,1.01-3.67,1.59-5.61,1.71 c-1.97,0.12-3.96-0.25-5.78-1.13c-2.08-1.02-3.94-2.71-5.29-5.14c-0.65-0.33-1.13-0.97-1.23-1.75c-0.04-0.31-0.01-0.61,0.07-0.89 c-0.39-1.16-0.68-2.43-0.87-3.83l-0.07,0.01c-1.24,0.17-2.39-0.7-2.56-1.94c-0.17-1.24,0.7-2.39,1.94-2.56l0.54-0.08 C44.19,104.32,44.18,103.16,44.13,102.06L44.13,102.06z M2.18,58.86C1.01,58.89,0.04,57.98,0,56.81c-0.04-1.17,0.88-2.14,2.05-2.18 l8.7-0.3c1.17-0.04,2.14,0.88,2.18,2.05c0.04,1.17-0.88,2.14-2.05,2.18L2.18,58.86L2.18,58.86z M110.68,50.25 c1.16-0.12,2.2,0.73,2.32,1.89c0.12,1.16-0.73,2.2-1.89,2.32l-8.66,0.91c-1.16,0.12-2.2-0.73-2.32-1.89 c-0.12-1.16,0.73-2.2,1.89-2.32L110.68,50.25L110.68,50.25z M94.91,14.78c0.65-0.97,1.96-1.23,2.93-0.58 c0.97,0.65,1.23,1.96,0.58,2.93l-4.84,7.24c-0.65,0.97-1.96,1.23-2.93,0.58c-0.97-0.65-1.23-1.96-0.58-2.93L94.91,14.78 L94.91,14.78z M57.63,2.06c0.03-1.17,1-2.09,2.16-2.06c1.17,0.03,2.09,1,2.06,2.16l-0.22,8.7c-0.03,1.17-1,2.09-2.16,2.06 c-1.17-0.03-2.09-1-2.06-2.16L57.63,2.06L57.63,2.06z M13.88,15.53c-0.86-0.8-0.9-2.14-0.11-2.99c0.8-0.86,2.14-0.9,2.99-0.11 l6.37,5.94c0.86,0.8,0.9,2.14,0.11,2.99c-0.8,0.86-2.14,0.9-2.99,0.11L13.88,15.53L13.88,15.53z M47.88,96.95l18.49-2.63 c1.59-6.7,5.05-10.73,8.8-15.08c3.08-3.58,6.36-7.4,8.76-13.34c1.76-4.35,2.41-8.43,2.31-12.19c-0.1-3.75-0.96-7.21-2.24-10.34 c-2.3-5.63-6.51-10.11-11.65-13.15c-4.11-2.43-8.8-3.94-13.59-4.37c-4.77-0.44-9.64,0.19-14.13,2.02 c-5.26,2.15-9.99,5.97-13.39,11.72c-2.64,5.12-3.86,10.02-3.9,14.73c-0.04,4.74,1.11,9.33,3.2,13.8c2.13,4.56,4.97,7.8,7.69,10.92 C42.47,83.9,46.48,88.49,47.88,96.95L47.88,96.95z M65.62,99.02l-17.27,2.45c0.05,1.1,0.07,2.25,0.05,3.47l17.05-2.42 C65.47,101.29,65.52,100.12,65.62,99.02L65.62,99.02z M48.49,109.52c0.12,0.92,0.3,1.76,0.53,2.54l16.55-2.04 c0.11-0.86,0.13-1.77,0.05-2.74l0,0l0-0.02l-0.01-0.17L48.49,109.52L48.49,109.52z M51.37,116.36c0.64,0.67,1.35,1.19,2.1,1.55 c1.15,0.56,2.42,0.79,3.67,0.72c1.29-0.08,2.57-0.47,3.74-1.15c1.1-0.64,2.09-1.53,2.88-2.65L51.37,116.36L51.37,116.36z"/>
+									</svg>
+								{/if}
+							</div>
 						</div>
 
 						<!-- Answer Options -->
-						<div class="space-y-3 flex-1">
+						<div class="space-y-2 flex-1">
 							{#each answers as answer, index}
 								<button
-									class="btn-answer w-full {selectedAnswer === answer ? (answer === currentQuestionData.correct_answer ? 'correct' : 'incorrect') : ''}"
-									on:click={() => selectAnswer(answer)}
+									class="btn-answer w-full {selectedAnswer === answer ? (answer === currentQuestionData.correct_answer ? 'correct' : 'incorrect') : (showResult && selectedAnswer !== answer ? 'inactive' : '')}"
+									on:click={(event) => {
+										event.stopPropagation();
+										selectAnswer(answer);
+									}}
 									disabled={showResult}
 								>
 									<div class="flex items-center space-x-3">
-										<span class="w-8 h-8 rounded-full bg-white/70 backdrop-blur-sm border-2 border-gray-300/70 flex items-center justify-center text-sm font-semibold shadow-md">
+										<span class="w-8 h-8 rounded-full {showResult && selectedAnswer !== answer ? 'bg-gray-200/50 border-gray-300/50 text-gray-400' : 'bg-white/70 border-gray-300/70'} backdrop-blur-sm border-2 flex items-center justify-center text-sm font-semibold shadow-md">
 											{String.fromCharCode(65 + index)}
 										</span>
 										<span class="flex-1 text-left">{answer}</span>
@@ -379,17 +464,6 @@
 							{/each}
 						</div>
 
-						<!-- Explanation (shown after answer) -->
-						{#if showResult}
-							<div class="mt-6 p-4 bg-gray-50 rounded-xl">
-								<h3 class="font-semibold text-text-primary mb-2">
-									{selectedAnswer === currentQuestionData.correct_answer ? '✅ Correct!' : '❌ Incorrect'}
-								</h3>
-								<p class="text-text-secondary text-sm">
-									{currentQuestionData.explanation}
-								</p>
-							</div>
-						{/if}
 
 					</div>
 				</div>
@@ -397,3 +471,89 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.progress-bar {
+		@apply w-full bg-gray-200 rounded-full h-2 overflow-hidden;
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.progress-fill {
+		@apply h-full bg-gradient-to-r from-primary-orange to-blue-500 transition-all duration-500 ease-out;
+	}
+
+	.card {
+		@apply bg-white/85 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-white/20;
+	}
+
+	.btn-primary {
+		@apply bg-primary-orange text-white font-medium;
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.btn-primary:hover {
+		@apply bg-orange-600;
+	}
+
+	.btn-home-icon {
+		@apply bg-primary-orange text-white;
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.btn-home-icon:hover {
+		@apply bg-orange-600;
+		transform: scale(1.05);
+	}
+
+	.painting-container {
+		@apply bg-white/90 backdrop-blur-lg rounded-2xl p-3 shadow-xl border border-white/20 h-full;
+	}
+
+	.painting-image {
+		@apply w-full h-auto rounded-xl shadow-lg transition-transform duration-300 hover:scale-105;
+		max-height: 400px;
+		object-fit: contain;
+	}
+
+	.btn-answer {
+		@apply bg-white/70 backdrop-blur-sm border-2 border-gray-200/70 text-text-primary p-3 rounded-xl transition-all duration-200 hover:bg-white/90 hover:border-primary-orange/50 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-orange/30;
+	}
+
+	.btn-answer.correct {
+		@apply bg-green-100/90 border-green-400 text-green-800;
+	}
+
+	.btn-answer.incorrect {
+		@apply bg-red-100/90 border-red-400 text-red-800;
+	}
+
+	.btn-answer.inactive {
+		@apply bg-gray-100/50 border-gray-300/50 text-gray-400;
+		opacity: 0.4;
+		transform: none !important;
+		box-shadow: none !important;
+	}
+
+	.btn-answer.inactive:hover {
+		@apply bg-gray-100/50 border-gray-300/50;
+		transform: none !important;
+		box-shadow: none !important;
+	}
+
+	.btn-answer:disabled {
+		@apply cursor-not-allowed;
+	}
+
+	.bulb-icon {
+		@apply transition-all duration-200 hover:text-amber-600;
+		drop-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+	}
+	
+	.bulb-icon:hover {
+		drop-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+		transform: scale(1.05);
+	}
+</style>

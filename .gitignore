@@ -138,5 +138,8 @@ playwright/.cache/
 # Design files
 design-Reference/
 
+# Screenshots for reference (local only)
+images/screenshots_local/
+
 # Component configuration
 components.json
