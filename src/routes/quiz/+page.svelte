@@ -445,7 +445,7 @@
 
 						<!-- Answer Options -->
 						<div class="space-y-2 flex-1">
-							{#each answers as answer, index}
+							{#each answers as answer, index (currentQuestion + '-' + index)}
 								<button
 									class="btn-answer w-full {selectedAnswer === answer ? (answer === currentQuestionData.correct_answer ? 'correct' : 'incorrect') : (showResult && selectedAnswer !== answer ? 'inactive' : '')}"
 									on:click={(event) => {
@@ -519,7 +519,11 @@
 	}
 
 	.btn-answer {
-		@apply bg-white/70 backdrop-blur-sm border-2 border-gray-200/70 text-text-primary p-3 rounded-xl transition-all duration-200 hover:bg-white/90 hover:border-primary-orange/50 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-orange/30;
+		@apply bg-white/70 backdrop-blur-sm border-2 border-gray-200/70 text-text-primary p-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-orange/30;
+	}
+	
+	.btn-answer:hover:not(.correct):not(.incorrect):not(.inactive) {
+		@apply bg-white/90 border-primary-orange/50 shadow-lg;
 	}
 
 	.btn-answer.correct {
