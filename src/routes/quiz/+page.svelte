@@ -309,7 +309,9 @@
 		// Only show popover for incorrect answers
 		if (!isCorrect) {
 			popoverTitle = '';
-			popoverDescription = `Correct answer is - <strong>${currentQuestionData.correct_answer}</strong>`;
+			// Create translated message with proper styling
+			const correctText = selectedLang === 'ru' ? 'Правильный ответ:' : 'Correct answer is:';
+			popoverDescription = `<span style="color: #374151;">${correctText} </span><strong style="color: #0ea5e9;">${currentQuestionData.correct_answer}</strong>`;
 			showPopover = true;
 			
 			// Clear any existing popover timer
@@ -352,11 +354,12 @@
 		}
 		showPopover = false;
 		
-		// Force blur any focused buttons to prevent blue border persistence
-		if (typeof document !== 'undefined') {
+		// Mobile-specific: Force blur any focused buttons to prevent blue border persistence
+		if (typeof document !== 'undefined' && window.innerWidth <= 768) {
 			const activeElement = document.activeElement;
 			if (activeElement && activeElement.classList && activeElement.classList.contains('btn-answer')) {
-				activeElement.blur();
+				// Use setTimeout to avoid interrupting the transition
+				setTimeout(() => activeElement.blur(), 0);
 			}
 		}
 		
@@ -374,21 +377,24 @@
 			// Go to results page
 			goto(`/results?score=${score}&total=${totalQuestions}&level=${level}`);
 		} else {
-			currentQuestion++;
-			selectedAnswer = '';
-			showResult = false;
-			// Load next question from array
-			if (questions[currentQuestion - 1]) {
-				currentQuestionData = questions[currentQuestion - 1];
-				updateAnswers();
-				questionStartTime = Date.now(); // Reset question start time
-				
-				// Load new image and continue preloading
-				loadCurrentImage();
-				preloadNextImages();
-				
-				startTimer(); // Start timer for new question
-			}
+			// Add smooth transition delay
+			setTimeout(() => {
+				currentQuestion++;
+				selectedAnswer = '';
+				showResult = false;
+				// Load next question from array
+				if (questions[currentQuestion - 1]) {
+					currentQuestionData = questions[currentQuestion - 1];
+					updateAnswers();
+					questionStartTime = Date.now(); // Reset question start time
+					
+					// Load new image and continue preloading
+					loadCurrentImage();
+					preloadNextImages();
+					
+					startTimer(); // Start timer for new question
+				}
+			}, 300); // 300ms delay for smooth transition
 		}
 	}
 
@@ -483,7 +489,7 @@
 	{:else}
 		<!-- Quiz Content -->
 		<div class="max-w-6xl mx-auto">
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 quiz-transition">
 				<!-- Image Section - Now first on mobile -->
 				<div class="order-1 lg:order-1 relative">
 					<div class="painting-container">
@@ -544,7 +550,7 @@
 
 				<!-- Question Section - Now second on mobile -->
 				<div class="order-2 lg:order-2">
-					<div class="card h-full flex flex-col">
+					<div class="card h-full flex flex-col question-card">
 						<!-- Question -->
 						<div class="mb-4 relative">
 							<div class="flex items-start gap-3 mb-2">
@@ -565,7 +571,7 @@
 
 						<!-- Answer Options -->
 						<div class="space-y-2 flex-1">
-							{#each answers as answer, index (currentQuestion + '-' + index)}
+							{#each answers as answer, index (currentQuestion + '-' + answer + '-' + index)}
 								<button
 									class="btn-answer w-full {selectedAnswer === answer ? (answer === currentQuestionData.correct_answer ? 'correct' : 'incorrect') : (showResult && selectedAnswer !== answer ? 'inactive' : '')}"
 									on:click={(event) => {
@@ -642,29 +648,26 @@
 		@apply bg-white/70 backdrop-blur-sm border-2 border-gray-200/70 text-text-primary p-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-orange/30;
 	}
 	
-	.btn-answer:hover:not(.correct):not(.incorrect):not(.inactive) {
-		@apply bg-white/90 border-primary-orange/50 shadow-lg;
+	/* Hover states only for devices that actually support hover (desktop) */
+	@media (hover: hover) {
+		.btn-answer:hover:not(.correct):not(.incorrect):not(.inactive) {
+			@apply bg-white/90 border-primary-orange/50 shadow-lg;
+		}
 	}
 	
-	/* Reset all states for clean questions - higher specificity to override any lingering states */
-	.btn-answer:focus:not(.correct):not(.incorrect):not(.inactive) {
-		@apply bg-white/70 border-gray-200/70 !important;
-		box-shadow: none !important;
-	}
-	
-	.btn-answer:active:not(.correct):not(.incorrect):not(.inactive) {
-		@apply bg-white/70 border-gray-200/70 !important;
-		box-shadow: none !important;
-	}
-	
-	/* Override any browser default focus styles completely */
-	.btn-answer:focus {
-		outline: none !important;
-	}
-	
-	/* Ensure clean state on new questions */
-	.btn-answer:not(.correct):not(.incorrect):not(.inactive):not(:hover) {
-		@apply bg-white/70 border-gray-200/70 !important;
+	/* Touch devices - no hover states to prevent sticky hover */
+	@media (hover: none) {
+		.btn-answer {
+			-webkit-tap-highlight-color: transparent;
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+		
+		/* Only show active state during actual press */
+		.btn-answer:active:not(.correct):not(.incorrect):not(.inactive) {
+			@apply bg-white/80 border-gray-300/80;
+		}
 	}
 
 	.btn-answer.correct {
@@ -740,5 +743,24 @@
 		to {
 			opacity: 1;
 		}
+	}
+
+	/* Smooth Transitions for Quiz Content */
+	.quiz-transition {
+		transition: all 0.3s ease-in-out;
+	}
+
+	.question-card {
+		min-height: 400px;
+		transition: all 0.3s ease-in-out;
+	}
+
+	.question-card .space-y-2 {
+		transition: opacity 0.2s ease-in-out;
+	}
+
+	/* Smooth question text transitions */
+	.question-card h1 {
+		transition: all 0.3s ease-in-out;
 	}
 </style>

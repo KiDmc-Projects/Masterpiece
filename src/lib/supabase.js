@@ -412,114 +412,71 @@ export async function uploadImage(file, fileName) {
   return data;
 }
 
-// Database setup functions
+// Database setup functions - NOTE: exec_sql RPC function needs to be created in Supabase first
 export async function createTables() {
   console.log("Creating database tables...");
 
-  // Create tables using SQL
-  const { data, error } = await supabase.rpc("exec_sql", {
-    sql: `
-		-- Create difficulty_levels table
-		CREATE TABLE IF NOT EXISTS difficulty_levels (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(50) NOT NULL,
-			description TEXT
-		);
-
-		-- Insert difficulty levels
-		INSERT INTO difficulty_levels (id, name, description) VALUES
-		(1, 'Neophyte', 'Perfect for art beginners'),
-		(2, 'Artisan', 'For art enthusiasts'),
-		(3, 'Master', 'Challenge for art experts'),
-		(4, 'Mix', 'Questions from all levels')
-		ON CONFLICT (id) DO NOTHING;
-
-		-- Create artists table
-		CREATE TABLE IF NOT EXISTS artists (
-			id BIGSERIAL PRIMARY KEY,
-			name_en VARCHAR(255) NOT NULL,
-			name_ru VARCHAR(255) NOT NULL,
-			birth_year INTEGER,
-			death_year INTEGER,
-			nationality VARCHAR(100),
-			art_movement VARCHAR(100),
-			difficulty_level INTEGER REFERENCES difficulty_levels(id),
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-
-		-- Create artworks table
-		CREATE TABLE IF NOT EXISTS artworks (
-			id BIGSERIAL PRIMARY KEY,
-			title_en VARCHAR(255) NOT NULL,
-			title_ru VARCHAR(255) NOT NULL,
-			artist_name_en VARCHAR(255) NOT NULL,
-			artist_name_ru VARCHAR(255) NOT NULL,
-			artist_id BIGINT REFERENCES artists(id),
-			year_created INTEGER,
-			image_path VARCHAR(500) NOT NULL,
-			medium VARCHAR(100),
-			dimensions VARCHAR(100),
-			current_location VARCHAR(255),
-			difficulty_level INTEGER REFERENCES difficulty_levels(id),
-			-- Metadata for smart wrong answers
-			art_movement VARCHAR(100),
-			nationality VARCHAR(100),
-			time_period VARCHAR(50),
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-
-		-- Create quiz_questions table
-		CREATE TABLE IF NOT EXISTS quiz_questions (
-			id BIGSERIAL PRIMARY KEY,
-			artwork_id BIGINT REFERENCES artworks(id),
-			question_type VARCHAR(50) DEFAULT 'artist_identification',
-			difficulty_level INTEGER REFERENCES difficulty_levels(id),
-			
-			correct_answer_en VARCHAR(255) NOT NULL,
-			correct_answer_ru VARCHAR(255) NOT NULL,
-			
-			option_a_en VARCHAR(255) NOT NULL,
-			option_a_ru VARCHAR(255) NOT NULL,
-			option_b_en VARCHAR(255) NOT NULL, 
-			option_b_ru VARCHAR(255) NOT NULL,
-			option_c_en VARCHAR(255) NOT NULL,
-			option_c_ru VARCHAR(255) NOT NULL,
-			
-			explanation_en TEXT,
-			explanation_ru TEXT,
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-
-		-- Create quiz_sessions table
-		CREATE TABLE IF NOT EXISTS quiz_sessions (
-			id BIGSERIAL PRIMARY KEY,
-			difficulty_level_id INTEGER REFERENCES difficulty_levels(id),
-			score INTEGER DEFAULT 0,
-			completed BOOLEAN DEFAULT FALSE,
-			completed_at TIMESTAMP,
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-
-		-- Create quiz_answers table
-		CREATE TABLE IF NOT EXISTS quiz_answers (
-			id BIGSERIAL PRIMARY KEY,
-			session_id BIGINT REFERENCES quiz_sessions(id),
-			question_id BIGINT REFERENCES quiz_questions(id),
-			user_answer VARCHAR(255),
-			is_correct BOOLEAN,
-			time_spent_seconds INTEGER,
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-		`,
-  });
-
-  if (error) {
+  try {
+    // Try to create quiz_attempts table using Supabase client directly
+    // This approach doesn't work with Supabase as it doesn't support DDL operations
+    console.error(
+      "Direct table creation not supported. Please run the SQL manually in Supabase dashboard.",
+    );
+    return false;
+  } catch (error) {
     console.error("Error creating tables:", error);
     return false;
   }
+}
 
-  console.log("Tables created successfully:", data);
-  return true;
+// Provide SQL for manual execution
+export function getTableCreationSQL() {
+  return `
+-- Create quiz_attempts table for user history (run this in Supabase SQL Editor)
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  level VARCHAR(50) NOT NULL,
+  score INTEGER NOT NULL,
+  total_questions INTEGER NOT NULL,
+  duration INTEGER, -- in seconds
+  language VARCHAR(10) DEFAULT 'ru',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own quiz attempts" ON quiz_attempts;
+DROP POLICY IF EXISTS "Users can insert own quiz attempts" ON quiz_attempts;
+
+-- Create policies with proper authentication context
+CREATE POLICY "Enable read access for authenticated users" ON quiz_attempts
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Enable insert access for authenticated users" ON quiz_attempts
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Debug: Check if auth is working (uncomment to test)
+-- SELECT auth.uid() as current_user_id;
+`;
+}
+
+// Debug function to check authentication context
+export async function debugAuth() {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    console.log("Current authenticated user:", user);
+
+    const { data, error } = await supabase.rpc("auth.uid");
+    console.log("Supabase auth.uid():", data, error);
+
+    return { user, authUid: data };
+  } catch (err) {
+    console.error("Auth debug error:", err);
+    return null;
+  }
 }
 
 export async function testSupabaseConnection() {
@@ -601,4 +558,118 @@ export async function getMixQuestions(limit = 10, language = "ru") {
   );
 
   return questions;
+}
+
+// Quiz history functions
+export async function saveQuizAttempt(
+  userId,
+  level,
+  score,
+  totalQuestions,
+  duration = null,
+  language = "ru",
+) {
+  if (!userId) {
+    console.log("No user ID provided, skipping quiz attempt save");
+    return null;
+  }
+
+  console.log("Attempting to save quiz attempt:", {
+    userId,
+    level,
+    score,
+    totalQuestions,
+    duration,
+    language,
+  });
+
+  try {
+    const { data, error } = await supabase
+      .from("quiz_attempts")
+      .insert([
+        {
+          user_id: userId,
+          level: level,
+          score: score,
+          total_questions: totalQuestions,
+          duration: duration,
+          language: language,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase error saving quiz attempt:", error);
+      // If table doesn't exist, provide helpful guidance
+      if (error.message && error.message.includes("does not exist")) {
+        console.error(
+          "quiz_attempts table does not exist. Please visit /setup to get the SQL for manual table creation.",
+        );
+        throw new Error(
+          "Quiz history table not found. Please contact administrator to set up the database.",
+        );
+      }
+      throw error;
+    }
+
+    console.log("Quiz attempt saved successfully:", data);
+    return data;
+  } catch (err) {
+    console.error("Unexpected error saving quiz attempt:", err);
+    throw err;
+  }
+}
+
+export async function getUserQuizHistory(userId) {
+  if (!userId) {
+    console.log("No user ID provided for quiz history");
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("quiz_attempts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching quiz history:", error);
+      // If table doesn't exist, provide helpful guidance
+      if (error.message && error.message.includes("does not exist")) {
+        console.error(
+          "quiz_attempts table does not exist. Please visit /setup to get the SQL for manual table creation.",
+        );
+        return [];
+      }
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error("Unexpected error fetching quiz history:", err);
+    return [];
+  }
+}
+
+// Test function to check if quiz_attempts table exists
+export async function testQuizHistoryTable() {
+  try {
+    const { data, error } = await supabase
+      .from("quiz_attempts")
+      .select("*")
+      .limit(1);
+
+    if (error) {
+      console.log("quiz_attempts table test failed:", error.message);
+      return false;
+    }
+
+    console.log("quiz_attempts table exists and is accessible");
+    return true;
+  } catch (err) {
+    console.error("Error testing quiz_attempts table:", err);
+    return false;
+  }
 }

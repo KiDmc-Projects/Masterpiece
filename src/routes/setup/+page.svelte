@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
-	import { supabase, createTables } from '$lib/supabase.js';
+	import { supabase, createTables, getTableCreationSQL } from '$lib/supabase.js';
 	
 	let status = 'Testing connection...';
 	let logs = [];
@@ -242,6 +242,12 @@ INSERT INTO difficulty_levels (id, name, description) VALUES
 (3, 'Master', 'Challenge for art experts'),
 (4, 'Mix', 'Questions from all levels');
 			</pre>
+		</div>
+		
+		<div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+			<h3 class="font-semibold text-orange-900 mb-3">Quiz History Table Setup:</h3>
+			<p class="text-orange-800 mb-3">To enable quiz history tracking, run this SQL in Supabase Dashboard → SQL Editor:</p>
+			<pre class="bg-orange-100 p-3 rounded text-xs overflow-x-auto text-orange-900">{getTableCreationSQL()}</pre>
 		</div>
 		
 		<div class="mt-4 text-center">
