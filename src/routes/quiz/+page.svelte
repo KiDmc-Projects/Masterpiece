@@ -352,6 +352,14 @@
 		}
 		showPopover = false;
 		
+		// Force blur any focused buttons to prevent blue border persistence
+		if (typeof document !== 'undefined') {
+			const activeElement = document.activeElement;
+			if (activeElement && activeElement.classList && activeElement.classList.contains('btn-answer')) {
+				activeElement.blur();
+			}
+		}
+		
 		// Stop any existing question timer
 		stopTimer();
 		
@@ -636,6 +644,27 @@
 	
 	.btn-answer:hover:not(.correct):not(.incorrect):not(.inactive) {
 		@apply bg-white/90 border-primary-orange/50 shadow-lg;
+	}
+	
+	/* Reset all states for clean questions - higher specificity to override any lingering states */
+	.btn-answer:focus:not(.correct):not(.incorrect):not(.inactive) {
+		@apply bg-white/70 border-gray-200/70 !important;
+		box-shadow: none !important;
+	}
+	
+	.btn-answer:active:not(.correct):not(.incorrect):not(.inactive) {
+		@apply bg-white/70 border-gray-200/70 !important;
+		box-shadow: none !important;
+	}
+	
+	/* Override any browser default focus styles completely */
+	.btn-answer:focus {
+		outline: none !important;
+	}
+	
+	/* Ensure clean state on new questions */
+	.btn-answer:not(.correct):not(.incorrect):not(.inactive):not(:hover) {
+		@apply bg-white/70 border-gray-200/70 !important;
 	}
 
 	.btn-answer.correct {
