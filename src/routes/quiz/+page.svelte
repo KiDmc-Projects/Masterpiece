@@ -51,6 +51,12 @@
 	let answers = [];
 	let quizAnswers = []; // Store user answers for review
 	let questionStartTime = 0; // Track time spent on each question
+	
+	// Image loading state
+	let imageLoading = true;
+	let imageError = false;
+	let currentImageUrl = '';
+	let imagePreloadCache = new Map(); // Cache for preloaded images
 
 	onMount(async () => {
 		// Clear any previous quiz answers
@@ -89,6 +95,11 @@
 				currentQuestionData = questions[0];
 				updateAnswers();
 				questionStartTime = Date.now(); // Track question start time
+				
+				// Load current image and start preloading
+				await loadCurrentImage();
+				preloadNextImages();
+				
 				startTimer(); // Start timer for first question
 				console.log('Current question data:', currentQuestionData);
 			} else {
@@ -107,6 +118,7 @@
 					explanation: 'Database is empty. Please run the SQL statements to populate your artwork data.'
 				};
 				updateAnswers();
+				await loadCurrentImage();
 				startTimer(); // Start timer for fallback question
 			}
 		} catch (error) {
@@ -125,6 +137,7 @@
 				explanation: 'Error connecting to database: ' + error.message
 			};
 			updateAnswers();
+			await loadCurrentImage();
 			startTimer(); // Start timer for error fallback question
 		} finally {
 			isLoading = false;
@@ -150,6 +163,70 @@
 			
 			// Shuffle answers so correct answer isn't always in same position
 			answers = answers.sort(() => Math.random() - 0.5);
+		}
+	}
+
+	// Image loading functions
+	function preloadImage(url) {
+		return new Promise((resolve, reject) => {
+			// Check if already cached
+			if (imagePreloadCache.has(url)) {
+				resolve(imagePreloadCache.get(url));
+				return;
+			}
+			
+			const img = new Image();
+			img.onload = () => {
+				imagePreloadCache.set(url, img);
+				resolve(img);
+			};
+			img.onerror = reject;
+			img.src = url;
+		});
+	}
+
+	async function loadCurrentImage() {
+		if (!currentQuestionData?.image_url) return;
+		
+		const newImageUrl = currentQuestionData.image_url;
+		
+		// If it's the same image, no need to reload
+		if (currentImageUrl === newImageUrl) {
+			imageLoading = false;
+			return;
+		}
+		
+		// Set loading state
+		imageLoading = true;
+		imageError = false;
+		
+		try {
+			await preloadImage(newImageUrl);
+			// Small delay to ensure smooth transition
+			await new Promise(resolve => setTimeout(resolve, 100));
+			currentImageUrl = newImageUrl;
+			imageLoading = false;
+		} catch (error) {
+			console.error('Error loading image:', error);
+			imageError = true;
+			imageLoading = false;
+			currentImageUrl = newImageUrl; // Still set the URL to try displaying
+		}
+	}
+
+	// Preload next images for smoother experience
+	function preloadNextImages() {
+		if (questions.length === 0) return;
+		
+		// Preload next 2-3 images
+		const preloadCount = Math.min(3, questions.length - currentQuestion);
+		for (let i = 0; i < preloadCount; i++) {
+			const nextIndex = currentQuestion + i;
+			if (nextIndex < questions.length && questions[nextIndex]?.image_url) {
+				preloadImage(questions[nextIndex].image_url).catch(() => {
+					// Silently fail for preloading - not critical
+				});
+			}
 		}
 	}
 
@@ -297,6 +374,11 @@
 				currentQuestionData = questions[currentQuestion - 1];
 				updateAnswers();
 				questionStartTime = Date.now(); // Reset question start time
+				
+				// Load new image and continue preloading
+				loadCurrentImage();
+				preloadNextImages();
+				
 				startTimer(); // Start timer for new question
 			}
 		}
@@ -397,11 +479,41 @@
 				<!-- Image Section - Now first on mobile -->
 				<div class="order-1 lg:order-1 relative">
 					<div class="painting-container">
-						<img 
-							src={currentQuestionData.image_url} 
-							alt="Famous painting to identify"
-							class="painting-image"
-						/>
+						{#if imageLoading}
+							<!-- Skeleton Loading State -->
+							<div class="image-skeleton">
+								<div class="skeleton-shimmer"></div>
+								<div class="absolute inset-0 flex items-center justify-center">
+									<div class="flex flex-col items-center space-y-3 text-text-secondary">
+										<div class="w-8 h-8 border-3 border-primary-orange border-t-transparent rounded-full animate-spin"></div>
+										<p class="text-sm font-medium">Loading artwork...</p>
+									</div>
+								</div>
+							</div>
+						{:else if imageError}
+							<!-- Error State -->
+							<div class="image-error">
+								<div class="flex flex-col items-center space-y-3 text-text-secondary">
+									<svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.072 16.5c-.77.833.192 2.5 1.732 2.5z" />
+									</svg>
+									<p class="text-sm font-medium">Unable to load artwork</p>
+									<p class="text-xs text-gray-400">Please check your connection</p>
+								</div>
+							</div>
+						{:else}
+							<!-- Actual Image with fade-in -->
+							<img 
+								src={currentImageUrl} 
+								alt="Famous painting to identify"
+								class="painting-image image-fade-in"
+								on:load={() => imageLoading = false}
+								on:error={() => {
+									imageError = true;
+									imageLoading = false;
+								}}
+							/>
+						{/if}
 					</div>
 					
 					<!-- Quiz Popover positioned above painting -->
@@ -559,5 +671,45 @@
 	.bulb-icon:hover {
 		drop-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
 		transform: scale(1.05);
+	}
+
+	/* Image Loading States */
+	.image-skeleton {
+		@apply w-full rounded-xl relative overflow-hidden bg-gray-200/50;
+		min-height: 300px;
+		max-height: 400px;
+	}
+
+	.skeleton-shimmer {
+		@apply absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent;
+		animation: shimmer 2s infinite linear;
+	}
+
+	.image-error {
+		@apply w-full rounded-xl flex items-center justify-center bg-gray-100/50;
+		min-height: 300px;
+		max-height: 400px;
+	}
+
+	.image-fade-in {
+		animation: fadeIn 0.3s ease-in-out;
+	}
+
+	@keyframes shimmer {
+		0% {
+			transform: translateX(-100%);
+		}
+		100% {
+			transform: translateX(100%);
+		}
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
 	}
 </style>
