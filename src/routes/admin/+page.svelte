@@ -635,11 +635,11 @@
 						class="inline-flex items-center space-x-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors duration-200 font-medium"
 						on:click={logout}
 					>
-						<span>🚪</span>
+						<img src="/sign-out.svg" alt="" class="w-4 h-4" />
 						<span>Logout</span>
 					</button>
 					<a href="/" class="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 font-medium">
-						<span>←</span>
+						<img src="/home.svg" alt="" class="w-4 h-4" />
 						<span>Back to Quiz</span>
 					</a>
 				</div>

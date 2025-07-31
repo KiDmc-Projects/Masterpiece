@@ -28,6 +28,7 @@
 	
 	// Avatar loading state
 	let avatarLoadError = false;
+	let showUserDropdown = false;
 
 	// Calculate percentage and grade
 	$: percentage = Math.round((score / total) * 100);
@@ -220,9 +221,23 @@
 		try {
 			await authService.signOut();
 			// User will be automatically updated via auth state change
+			showUserDropdown = false; // Close dropdown after logout
 		} catch (error) {
 			console.error('Error signing out:', error);
 		}
+	}
+	
+	// User dropdown functions
+	function toggleUserDropdown() {
+		showUserDropdown = !showUserDropdown;
+	}
+	
+	function openUserDropdown() {
+		showUserDropdown = true;
+	}
+	
+	function closeUserDropdown() {
+		showUserDropdown = false;
 	}
 
 </script>
@@ -250,10 +265,12 @@
 				{#if !$authLoading}
 					{#if $user}
 						<!-- User Profile Button -->
-						<div class="relative group">
+						<div class="relative user-dropdown-container">
 							<button 
 								class="w-11 h-11 bg-white/10 backdrop-blur-sm rounded-full border border-white/30 shadow-lg flex items-center justify-center transition-all duration-200 hover:bg-white/20 hover:scale-105"
 								aria-label="User Profile"
+								on:click={toggleUserDropdown}
+								on:mouseenter={openUserDropdown}
 							>
 								{#if $user.user_metadata?.avatar_url && !avatarLoadError}
 									<img 
@@ -272,25 +289,37 @@
 							</button>
 							
 							<!-- User Dropdown Menu -->
-							<div class="absolute top-12 right-0 w-48 bg-white/95 backdrop-blur-lg rounded-xl shadow-xl border border-white/30 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">
-								<div class="px-4 py-2 border-b border-gray-200/50">
-									<p class="text-sm font-medium text-text-primary truncate">
-										{$user.email || 'Anonymous User'}
-									</p>
+							{#if showUserDropdown}
+								<div 
+									class="absolute top-12 right-0 w-48 bg-white/95 backdrop-blur-lg rounded-xl shadow-xl border border-white/30 py-2 opacity-100 transition-all duration-300 pointer-events-auto z-10 transform translate-y-0"
+									on:mouseenter={openUserDropdown}
+									on:mouseleave={closeUserDropdown}
+								>
+									<div class="px-4 py-2 border-b border-gray-200/50">
+										<p class="text-sm font-medium text-text-primary truncate">
+											{$user.email || 'Anonymous User'}
+										</p>
+									</div>
+									<button 
+										class="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-100/50 transition-colors duration-200 flex items-center gap-2"
+										on:click={() => { 
+											sessionStorage.setItem('fromResults', 'true');
+											goto('/history'); 
+											showUserDropdown = false; 
+										}}
+									>
+										<img src="/history.svg" alt="" class="w-4 h-4" />
+										Quiz History
+									</button>
+									<button 
+										class="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-100/50 transition-colors duration-200 flex items-center gap-2"
+										on:click={handleLogout}
+									>
+										<img src="/sign-out.svg" alt="" class="w-4 h-4" />
+										Sign Out
+									</button>
 								</div>
-								<button 
-									class="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-100/50 transition-colors duration-200"
-									on:click={() => goto('/history')}
-								>
-									📊 Quiz History
-								</button>
-								<button 
-									class="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-100/50 transition-colors duration-200"
-									on:click={handleLogout}
-								>
-									🚪 Sign Out
-								</button>
-							</div>
+							{/if}
 						</div>
 					{:else}
 						<!-- Login Button -->

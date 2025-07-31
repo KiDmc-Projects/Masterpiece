@@ -7,10 +7,10 @@ const config = {
   kit: {
     adapter: adapter({
       pages: ".svelte-kit/output/static",
-      assets: ".svelte-kit/output/static", 
+      assets: ".svelte-kit/output/static",
       fallback: "index.html",
       precompress: false,
-      strict: false
+      strict: false,
     }),
     alias: {
       $lib: "./src/lib",

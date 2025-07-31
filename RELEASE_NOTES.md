@@ -1,5 +1,41 @@
 # 🎨 Masterpiece Quiz - Release Notes
 
+## Version 0.7.1 - Custom SVG Icons & UI Enhancement
+
+_Released: January 31, 2025_
+
+### 🎨 **Visual Design Improvements**
+
+#### **🖼️ Custom SVG Icon System**
+- **Professional Icons**: Replaced emoji icons with custom SVG icons throughout the application
+- **Home Icon**: Beautiful house icon for navigation and "Back to Home" buttons
+- **History Icon**: Colorful chart icon for quiz history and statistics features  
+- **Sign Out Icon**: Clean exit icon for logout functionality across all pages
+- **Consistent Sizing**: All icons standardized to 16x16px for visual consistency
+
+#### **🎯 Enhanced History Page**
+- **Title Icon**: Replaced 📊 emoji with professional SVG icon in page header
+- **Improved Table Design**: Enhanced row visibility with glassmorphism borders and shadows
+- **Bold Column Headers**: Better typography for improved readability
+- **Level Color Coding**: Applied styleguide-compliant colors (Green for Neophyte, Teal for Artisan, Purple for Master, Orange for Mix)
+- **Date Format**: Simplified date display by removing hours for cleaner presentation
+- **Smart Navigation**: Added "Back to Results" button when navigating from results page
+- **Row Differentiation**: Enhanced visual separation with professional shadows and borders
+
+#### **🔧 Technical Infrastructure**
+- **Static Asset Management**: Proper SVG file organization in `/static` folder for web accessibility
+- **Cross-Page Consistency**: Unified icon implementation across main, results, history, and admin pages
+- **Responsive Design**: All icons maintain proper scaling across desktop and mobile devices
+
+### 🛠️ **User Experience Enhancements**
+
+- **Navigation Flow**: Improved user journey with contextual "Back to Results" functionality
+- **Visual Hierarchy**: Better distinction between functional and decorative icons
+- **Professional Appearance**: Elevated application aesthetics with custom iconography
+- **Accessibility**: Proper alt attributes and semantic markup for all icons
+
+---
+
 ## Version 0.7.0 - Authentication System & Premium Visual Effects
 
 _Released: July 30, 2025_
@@ -25,7 +61,7 @@ _Released: July 30, 2025_
 #### **🌈 Premium Visual Effects**
 
 - **Gradient Text Animation**: Stunning 6-color flowing gradient animation on main "Masterpiece" title
-- **Results Page Enhancement**: Same beautiful gradient effect applied to "Quiz Complete!" title  
+- **Results Page Enhancement**: Same beautiful gradient effect applied to "Quiz Complete!" title
 - **4-Second Animation Cycle**: Optimized timing for dynamic, engaging visual flow
 - **Subtle Glow Effects**: Professional background halo effects with responsive mobile optimization
 - **Multi-Color Palette**: Orange → Blue → Purple → Amber → Pink → Emerald gradient flow
