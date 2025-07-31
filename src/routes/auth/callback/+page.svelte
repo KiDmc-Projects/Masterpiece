@@ -11,32 +11,43 @@
     try {
       const supabase = createSupabaseLoadClient();
       
-      // Handle the auth callback from the URL
-      const { data, error: authError } = await supabase.auth.getSessionFromUrl();
+      // Check if this is an OAuth callback with URL fragments
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
       
-      if (authError) {
-        console.error('Auth callback error:', authError);
-        error = authError.message;
+      // Check for auth tokens in URL (OAuth callback)
+      const accessToken = hashParams.get('access_token') || urlParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token') || urlParams.get('refresh_token');
+      
+      if (accessToken) {
+        // Set the session using the tokens from the URL
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        });
         
-        // Still try to get existing session
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData.session) {
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          error = sessionError.message;
+        } else if (sessionData.session) {
+          // Update the auth stores with the new session
           session.set(sessionData.session);
           user.set(sessionData.session.user);
+          console.log('Auth successful:', sessionData.session.user.email);
         }
-      } else if (data.session) {
-        // Update the auth stores with the new session
-        session.set(data.session);
-        user.set(data.session.user);
-        console.log('Auth successful:', data.session.user.email);
       } else {
-        // Check if there's an existing session
+        // No tokens in URL, check for existing session
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData.session) {
           session.set(sessionData.session);
           user.set(sessionData.session.user);
+          console.log('Existing session found:', sessionData.session.user.email);
         }
       }
+      
+      // Clean up the URL by removing auth parameters
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
       
       // Always redirect to home after handling auth
       setTimeout(() => {
