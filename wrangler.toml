@@ -2,11 +2,7 @@
 name = "masterpiece-quiz-prod"
 compatibility_date = "2024-09-25" 
 compatibility_flags = ["nodejs_compat"]
-main = ".svelte-kit/cloudflare-tmp/_worker.js"
+main = ".svelte-kit/output/client/_worker.js"
 account_id = "25a2df56c26faf86bc9de7a9f31fbc9a"
 
-# Assets configuration for SvelteKit
-assets = { directory = ".svelte-kit/output/client", binding = "ASSETS" }
-
 # Environment variables are managed via Cloudflare Pages dashboard
-# or wrangler pages secret put commands for production deployment

@@ -236,11 +236,12 @@ fireworks = new Fireworks(container, {
 
 ## Deployment Information
 
-- **Production URL:** https://art.oqva.cloud
-- **Staging URL:** https://masterpiece-quiz-pages.pages.dev
+- **Production URL:** https://art.oqva.cloud (Custom Domain)
+- **Worker URL:** https://masterpiece-quiz-prod.oqva-account.workers.dev (Direct Access)
 - **GitHub Repository:** Connected for automatic deployments
 - **Build Command:** `npm run build`
-- **Output Directory:** `.svelte-kit/output/static`
+- **Output Directory:** `.svelte-kit/output/client` (assets) & `.svelte-kit/output/server` (functions)
+- **Deployment Type:** Cloudflare Workers with SSR support
 
 ## Troubleshooting
 
@@ -255,13 +256,17 @@ fireworks = new Fireworks(container, {
 
 ```bash
 # Check build output
-ls -la .svelte-kit/output/static
+ls -la .svelte-kit/output/client
+ls -la .svelte-kit/output/server
 
 # Test production build locally
 npm run preview
 
-# Deploy manually if needed
-wrangler pages deploy .svelte-kit/output/static --project-name=masterpiece-quiz-pages
+# Deploy manually as Cloudflare Worker
+wrangler deploy
+
+# Deploy as Pages (alternative, static only)
+wrangler pages deploy .svelte-kit/output/client --project-name=masterpiece-quiz-pages
 ```
 
 This is a **production-ready, feature-complete application** with professional-grade animations, comprehensive learning tools, and multilingual support. All major features are implemented and thoroughly tested.
