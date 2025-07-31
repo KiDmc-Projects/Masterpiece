@@ -1,8 +1,6 @@
 # Wrangler configuration for Guess the Masterpiece Quiz App  
-name = "masterpiece-quiz-prod"
+name = "masterpiece-quiz-pages"
 compatibility_date = "2024-09-25" 
-compatibility_flags = ["nodejs_compat"]
-main = ".svelte-kit/output/client/_worker.js"
-account_id = "25a2df56c26faf86bc9de7a9f31fbc9a"
+pages_build_output_dir = ".svelte-kit/output/static"
 
 # Environment variables are managed via Cloudflare Pages dashboard

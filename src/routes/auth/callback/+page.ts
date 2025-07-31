@@ -1,13 +1,8 @@
-// Client-side auth callback - redirect to home
+// Client-side auth callback
 export const prerender = true;
 export const ssr = false;
 
 export const load = async () => {
-  // For static site, just redirect to home
-  // Real auth will be handled client-side
-  if (typeof window !== 'undefined') {
-    window.location.href = '/';
-  }
-  
+  // Let the Svelte component handle the auth callback
   return {};
 };
