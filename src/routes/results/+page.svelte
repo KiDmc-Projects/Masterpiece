@@ -309,7 +309,7 @@
 										}}
 									>
 										<img src="/history.svg" alt="" class="w-4 h-4" />
-										Quiz History
+										History
 									</button>
 									<button 
 										class="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-gray-100/50 transition-colors duration-200 flex items-center gap-2"

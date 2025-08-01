@@ -17,6 +17,13 @@
 	// Check if user came from results page
 	let cameFromResults = false;
 
+	// Pagination state
+	let currentPage = 1;
+	let itemsPerPage = 25;
+	let totalItems = 0;
+	let totalPages = 0;
+	let paginatedHistory = [];
+
 	onMount(async () => {
 		// Initialize auth
 		initializeAuth();
@@ -53,6 +60,7 @@
 		try {
 			loading = true;
 			quizHistory = await getUserQuizHistory(userId);
+			updatePagination();
 		} catch (err) {
 			console.error('Error loading quiz history:', err);
 			error = 'Failed to load quiz history';
@@ -101,6 +109,99 @@
 		}
 	}
 
+	function calculateLevelStats(history, level) {
+		const levelAttempts = history.filter(attempt => attempt.level.toLowerCase() === level.toLowerCase());
+		
+		if (levelAttempts.length === 0) {
+			return {
+				totalQuizzes: 0,
+				averageScore: 0,
+				bestScore: 0,
+				quizzesPassed: 0
+			};
+		}
+
+		const scores = levelAttempts.map(attempt => Math.round((attempt.score / attempt.total_questions) * 100));
+		const averageScore = Math.round(levelAttempts.reduce((acc, attempt) => acc + (attempt.score / attempt.total_questions) * 100, 0) / levelAttempts.length);
+		const bestScore = Math.max(...scores);
+		const quizzesPassed = levelAttempts.filter(attempt => (attempt.score / attempt.total_questions) * 100 >= 70).length;
+
+		return {
+			totalQuizzes: levelAttempts.length,
+			averageScore,
+			bestScore,
+			quizzesPassed
+		};
+	}
+
+	function getAvailableLevels(history) {
+		const levels = [...new Set(history.map(attempt => attempt.level))];
+		return levels.sort((a, b) => {
+			const order = { neophyte: 1, artisan: 2, master: 3, mix: 4 };
+			return (order[a.toLowerCase()] || 5) - (order[b.toLowerCase()] || 5);
+		});
+	}
+
+	function updatePagination() {
+		totalItems = quizHistory.length;
+		totalPages = Math.ceil(totalItems / itemsPerPage);
+		
+		// Ensure current page is within bounds
+		if (currentPage > totalPages) {
+			currentPage = Math.max(1, totalPages);
+		}
+		
+		// Calculate start and end indices
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
+		
+		// Slice the history array for current page
+		paginatedHistory = quizHistory.slice(startIndex, endIndex);
+	}
+
+	function goToPage(page) {
+		if (page >= 1 && page <= totalPages) {
+			currentPage = page;
+			updatePagination();
+		}
+	}
+
+	function nextPage() {
+		goToPage(currentPage + 1);
+	}
+
+	function previousPage() {
+		goToPage(currentPage - 1);
+	}
+
+	function getVisiblePageNumbers() {
+		const delta = 2; // Number of pages to show on each side of current page
+		const range = [];
+		const rangeWithDots = [];
+		
+		for (let i = Math.max(2, currentPage - delta); 
+			 i <= Math.min(totalPages - 1, currentPage + delta); 
+			 i++) {
+			range.push(i);
+		}
+
+		if (currentPage - delta > 2) {
+			rangeWithDots.push(1, '...');
+		} else {
+			rangeWithDots.push(1);
+		}
+
+		rangeWithDots.push(...range);
+
+		if (currentPage + delta < totalPages - 1) {
+			rangeWithDots.push('...', totalPages);
+		} else if (totalPages > 1) {
+			rangeWithDots.push(totalPages);
+		}
+
+		return rangeWithDots;
+	}
+
 	async function handleLogout() {
 		try {
 			const { error } = await supabase.auth.signOut();
@@ -136,7 +237,7 @@
 </script>
 
 <svelte:head>
-	<title>Quiz History - Guess the Masterpiece</title>
+	<title>History - Guess the Masterpiece</title>
 </svelte:head>
 
 <div class="min-h-screen p-4 relative overflow-hidden" on:click={handleClickOutside}>
@@ -201,9 +302,8 @@
 				{/if}
 			</div>
 			
-			<h1 class="text-4xl md:text-5xl font-bold text-text-primary mb-4 flex items-center gap-3">
-				Quiz History
-				<img src="/history.svg" alt="" class="w-10 h-10 md:w-12 md:h-12" />
+			<h1 class="text-4xl md:text-5xl font-bold mb-4 gradient-text">
+				History
 			</h1>
 			<p class="text-lg text-text-secondary mb-6">
 				Track your progress and see how you've improved over time
@@ -235,7 +335,7 @@
 				<!-- Empty State -->
 				<div class="p-12 text-center">
 					<div class="text-gray-400 text-6xl mb-4">📊</div>
-					<h3 class="text-xl font-bold text-text-primary mb-2">No Quiz History Yet</h3>
+					<h3 class="text-xl font-bold text-text-primary mb-2">No History Yet</h3>
 					<p class="text-text-secondary mb-6">Start taking quizzes to see your progress here!</p>
 					<button 
 						class="px-6 py-2 bg-primary-orange text-white rounded-lg font-medium hover:bg-orange-600 transition-colors duration-200"
@@ -259,7 +359,7 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-200/30">
-							{#each quizHistory as attempt}
+							{#each paginatedHistory as attempt}
 								{@const percentage = Math.round((attempt.score / attempt.total_questions) * 100)}
 								{@const gradeInfo = getGrade(percentage)}
 								{@const levelColor = getLevelColor(attempt.level)}
@@ -290,32 +390,97 @@
 					</table>
 				</div>
 
-				<!-- Summary Stats -->
-				<div class="border-t border-gray-200/50 p-6">
-					<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-						<div class="text-center">
-							<div class="text-2xl font-bold text-text-primary">{quizHistory.length}</div>
-							<div class="text-sm text-text-secondary">Total Quizzes</div>
-						</div>
-						<div class="text-center">
-							<div class="text-2xl font-bold text-text-primary">
-								{Math.round(quizHistory.reduce((acc, attempt) => acc + (attempt.score / attempt.total_questions) * 100, 0) / quizHistory.length)}%
+				<!-- Pagination Controls -->
+				{#if totalPages > 1}
+					<div class="border-t border-gray-200/50 px-6 py-4">
+						<div class="flex items-center justify-between">
+							<!-- Results info -->
+							<div class="text-sm text-text-secondary">
+								Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} results
 							</div>
-							<div class="text-sm text-text-secondary">Average Score</div>
-						</div>
-						<div class="text-center">
-							<div class="text-2xl font-bold text-text-primary">
-								{Math.max(...quizHistory.map(attempt => Math.round((attempt.score / attempt.total_questions) * 100)))}%
+							
+							<!-- Pagination buttons -->
+							<div class="flex items-center space-x-2">
+								<!-- Previous button -->
+								<button 
+									class="px-3 py-2 rounded-lg border border-gray-300/50 text-sm font-medium transition-colors duration-200 {currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-text-primary hover:bg-gray-100/50'}"
+									on:click={previousPage}
+									disabled={currentPage === 1}
+								>
+									Previous
+								</button>
+								
+								<!-- Page numbers -->
+								{#each getVisiblePageNumbers() as pageNum}
+									{#if pageNum === '...'}
+										<span class="px-3 py-2 text-sm text-text-secondary">...</span>
+									{:else}
+										<button 
+											class="px-3 py-2 rounded-lg border text-sm font-medium transition-colors duration-200 {currentPage === pageNum ? 'bg-primary-orange text-white border-primary-orange' : 'border-gray-300/50 text-text-primary hover:bg-gray-100/50'}"
+											on:click={() => goToPage(pageNum)}
+										>
+											{pageNum}
+										</button>
+									{/if}
+								{/each}
+								
+								<!-- Next button -->
+								<button 
+									class="px-3 py-2 rounded-lg border border-gray-300/50 text-sm font-medium transition-colors duration-200 {currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-text-primary hover:bg-gray-100/50'}"
+									on:click={nextPage}
+									disabled={currentPage === totalPages}
+								>
+									Next
+								</button>
 							</div>
-							<div class="text-sm text-text-secondary">Best Score</div>
-						</div>
-						<div class="text-center">
-							<div class="text-2xl font-bold text-text-primary">
-								{quizHistory.filter(attempt => (attempt.score / attempt.total_questions) * 100 >= 70).length}
-							</div>
-							<div class="text-sm text-text-secondary">Quizzes Passed</div>
 						</div>
 					</div>
+				{/if}
+
+				<!-- Level-based Statistics -->
+				<div class="border-t border-gray-200/50 p-6">
+					<h3 class="text-lg font-bold text-text-primary mb-4">Statistics by Level</h3>
+					
+					{#each getAvailableLevels(quizHistory) as level}
+						{@const levelStats = calculateLevelStats(quizHistory, level)}
+						{@const levelColor = getLevelColor(level)}
+						
+						<div class="mb-6 last:mb-0">
+							<div class="flex items-center gap-3 mb-3">
+								<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold {levelColor.bg} {levelColor.text} shadow-sm">
+									{capitalizeLevel(level)}
+								</span>
+								<div class="text-sm text-text-secondary">
+									{levelStats.totalQuizzes} quiz{levelStats.totalQuizzes !== 1 ? 'es' : ''} taken
+								</div>
+							</div>
+							
+							<div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white/50 backdrop-blur-sm border border-white/20 rounded-lg p-4">
+								<div class="text-center">
+									<div class="text-xl font-bold text-text-primary">{levelStats.totalQuizzes}</div>
+									<div class="text-xs text-text-secondary">Total Quizzes</div>
+								</div>
+								<div class="text-center">
+									<div class="text-xl font-bold text-text-primary">
+										{levelStats.averageScore}%
+									</div>
+									<div class="text-xs text-text-secondary">Average Score</div>
+								</div>
+								<div class="text-center">
+									<div class="text-xl font-bold text-text-primary">
+										{levelStats.bestScore}%
+									</div>
+									<div class="text-xs text-text-secondary">Best Score</div>
+								</div>
+								<div class="text-center">
+									<div class="text-xl font-bold text-text-primary">
+										{levelStats.quizzesPassed}
+									</div>
+									<div class="text-xs text-text-secondary">Quizzes Passed</div>
+								</div>
+							</div>
+						</div>
+					{/each}
 				</div>
 			{/if}
 		</div>
@@ -365,5 +530,70 @@
 	table {
 		border-spacing: 0 0.5rem;
 		border-collapse: separate;
+	}
+
+	/* Gradient Text Animation */
+	.gradient-text {
+		background: linear-gradient(
+			45deg,
+			#f97316,  /* primary-orange */
+			#0ea5e9,  /* sky-500 */
+			#8b5cf6,  /* violet-500 */
+			#f59e0b,  /* amber-500 */
+			#ec4899,  /* pink-500 */
+			#10b981   /* emerald-500 */
+		);
+		background-size: 400% 400%;
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		animation: gradientShift 4s ease-in-out infinite;
+		position: relative;
+		display: inline-block;
+	}
+
+	@keyframes gradientShift {
+		0%, 100% {
+			background-position: 0% 50%;
+		}
+		50% {
+			background-position: 100% 50%;
+		}
+	}
+
+	/* Add subtle glow effect */
+	.gradient-text::after {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: linear-gradient(
+			45deg,
+			#f97316,  /* primary-orange */
+			#0ea5e9,  /* sky-500 */
+			#8b5cf6,  /* violet-500 */
+			#f59e0b,  /* amber-500 */
+			#ec4899,  /* pink-500 */
+			#10b981   /* emerald-500 */
+		);
+		background-size: 400% 400%;
+		animation: gradientShift 4s ease-in-out infinite;
+		filter: blur(20px);
+		z-index: -1;
+		opacity: 0.3;
+	}
+
+	/* Responsive adjustments for gradient text */
+	@media (max-width: 768px) {
+		.gradient-text {
+			background-size: 300% 300%;
+		}
+		
+		.gradient-text::after {
+			background-size: 300% 300%;
+			filter: blur(15px);
+		}
 	}
 </style>

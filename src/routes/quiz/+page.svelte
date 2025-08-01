@@ -492,7 +492,8 @@
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 quiz-transition">
 				<!-- Image Section - Now first on mobile -->
 				<div class="order-1 lg:order-1 relative">
-					<div class="painting-container">
+					<div class="artwork-container" key={currentQuestion}>
+						<div class="painting-container">
 						{#if imageLoading}
 							<!-- Skeleton Loading State -->
 							<div class="image-skeleton">
@@ -546,6 +547,7 @@
 							</div>
 						{/if}
 					</QuizPopover>
+					</div>
 				</div>
 
 				<!-- Question Section - Now second on mobile -->
@@ -572,21 +574,23 @@
 						<!-- Answer Options -->
 						<div class="space-y-2 flex-1">
 							{#each answers as answer, index (currentQuestion + '-' + answer + '-' + index)}
-								<button
-									class="btn-answer w-full {selectedAnswer === answer ? (answer === currentQuestionData.correct_answer ? 'correct' : 'incorrect') : (showResult && selectedAnswer !== answer ? 'inactive' : '')}"
-									on:click={(event) => {
-										event.stopPropagation();
-										selectAnswer(answer);
-									}}
-									disabled={showResult}
-								>
-									<div class="flex items-center space-x-3">
-										<span class="w-8 h-8 rounded-full {showResult && selectedAnswer !== answer ? 'bg-gray-200/50 border-gray-300/50 text-gray-400' : 'bg-white/70 border-gray-300/70'} backdrop-blur-sm border-2 flex items-center justify-center text-sm font-semibold shadow-md">
-											{String.fromCharCode(65 + index)}
-										</span>
-										<span class="flex-1 text-left">{answer}</span>
-									</div>
-								</button>
+								<div class="answer-container" style="animation-delay: {index * 100}ms">
+									<button
+										class="btn-answer w-full {selectedAnswer === answer ? (answer === currentQuestionData.correct_answer ? 'correct' : 'incorrect') : (showResult && selectedAnswer !== answer ? 'inactive' : '')}"
+										on:click={(event) => {
+											event.stopPropagation();
+											selectAnswer(answer);
+										}}
+										disabled={showResult}
+									>
+										<div class="flex items-center space-x-3">
+											<span class="w-8 h-8 rounded-full {showResult && selectedAnswer !== answer ? 'bg-gray-200/50 border-gray-300/50 text-gray-400' : 'bg-white/70 border-gray-300/70'} backdrop-blur-sm border-2 flex items-center justify-center text-sm font-semibold shadow-md">
+												{String.fromCharCode(65 + index)}
+											</span>
+											<span class="flex-1 text-left">{answer}</span>
+										</div>
+									</button>
+								</div>
 							{/each}
 						</div>
 
@@ -742,6 +746,55 @@
 		}
 		to {
 			opacity: 1;
+		}
+	}
+
+	/* Answer Options Smooth Animation */
+	.answer-container {
+		animation: slideInUp 0.4s ease-out both;
+	}
+
+	@keyframes slideInUp {
+		0% {
+			opacity: 0;
+			transform: translateY(20px) scale(0.95);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
+
+	/* Enhanced button transitions */
+	.btn-answer {
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	/* Artwork Container Ultra Smooth Animation */
+	.artwork-container {
+		animation: artworkFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+	}
+
+	@keyframes artworkFadeIn {
+		0% {
+			opacity: 0;
+			transform: translateY(-20px) scale(0.95);
+			filter: blur(4px);
+		}
+		30% {
+			opacity: 0.3;
+			transform: translateY(-10px) scale(0.97);
+			filter: blur(2px);
+		}
+		60% {
+			opacity: 0.7;
+			transform: translateY(-3px) scale(0.99);
+			filter: blur(1px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+			filter: blur(0px);
 		}
 	}
 

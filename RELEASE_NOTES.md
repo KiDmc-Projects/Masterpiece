@@ -1,5 +1,60 @@
 # 🎨 Masterpiece Quiz - Release Notes
 
+## Version 0.7.2 - Enhanced History & Mobile Experience
+
+_Released: August 1, 2025_
+
+### 🎯 **User Experience Improvements**
+
+#### **📊 Enhanced History Page Features**
+
+- **Advanced Pagination**: Professional pagination system with 25 items per page for better performance
+- **Contextual Navigation**: Smart "Back to Results" button when navigating directly from quiz results
+- **Per-Level Statistics**: Comprehensive statistics breakdown showing performance across different difficulty levels
+- **User Dropdown Menu**: Enhanced user interface with profile dropdown for better navigation
+- **Session Memory**: Intelligent detection of user navigation paths for improved UX flow
+
+#### **📱 Mobile Touch Experience**
+
+- **Reverted Touch Handling**: Removed problematic mobile touch enhancements that caused interaction issues
+- **Improved Quiz Animations**: Smooth transitions and animations throughout quiz experience
+- **Menu System Updates**: Enhanced menu functionality across results and history pages
+
+### 🛠️ **Technical Improvements**
+
+#### **🔧 Database & Content Fixes**
+
+- **Artist Name Standardization**: Fixed Renoir name consistency in fallback wrong answers system
+  - Standardized from "Пьер-Огюст Ренуар" to "Пьер Огюст Ренуар" for database consistency
+- **Database Maintenance Tools**: Added comprehensive SQL queries in CLAUDE.md for finding duplicate artist names and data cleanup
+
+#### **🎨 Visual Assets Enhancement**
+
+- **Enhanced Progress SVG**: Updated progress.svg with improved multicolor design and better visual appeal
+- **Icon Consistency**: Maintained professional SVG icon system across all pages
+
+### 🗄️ **Database Management**
+
+#### **📋 Maintenance Capabilities**
+
+- **Duplicate Detection**: SQL queries to identify duplicate artist names across different languages
+- **Data Consistency**: Tools for maintaining clean, consistent artist name formatting
+- **Quality Assurance**: Database cleanup utilities for ongoing content quality management
+
+### 🐛 **Bug Fixes**
+
+- **Mobile Interactions**: Resolved touch handling issues on mobile devices by reverting problematic changes
+- **Artist Name Consistency**: Fixed inconsistent artist name formatting in fallback answer system
+- **Navigation Flow**: Improved page transitions and back navigation from results to history
+
+### 📊 **Performance Enhancements**
+
+- **Pagination Performance**: Efficient handling of large history datasets with 25-item pagination
+- **Memory Management**: Improved session storage handling for navigation state
+- **Animation Optimization**: Smoother quiz transitions and loading states
+
+---
+
 ## Version 0.7.1 - Custom SVG Icons & UI Enhancement
 
 _Released: January 31, 2025_
@@ -7,13 +62,15 @@ _Released: January 31, 2025_
 ### 🎨 **Visual Design Improvements**
 
 #### **🖼️ Custom SVG Icon System**
+
 - **Professional Icons**: Replaced emoji icons with custom SVG icons throughout the application
 - **Home Icon**: Beautiful house icon for navigation and "Back to Home" buttons
-- **History Icon**: Colorful chart icon for quiz history and statistics features  
+- **History Icon**: Colorful chart icon for quiz history and statistics features
 - **Sign Out Icon**: Clean exit icon for logout functionality across all pages
 - **Consistent Sizing**: All icons standardized to 16x16px for visual consistency
 
 #### **🎯 Enhanced History Page**
+
 - **Title Icon**: Replaced 📊 emoji with professional SVG icon in page header
 - **Improved Table Design**: Enhanced row visibility with glassmorphism borders and shadows
 - **Bold Column Headers**: Better typography for improved readability
@@ -23,6 +80,7 @@ _Released: January 31, 2025_
 - **Row Differentiation**: Enhanced visual separation with professional shadows and borders
 
 #### **🔧 Technical Infrastructure**
+
 - **Static Asset Management**: Proper SVG file organization in `/static` folder for web accessibility
 - **Cross-Page Consistency**: Unified icon implementation across main, results, history, and admin pages
 - **Responsive Design**: All icons maintain proper scaling across desktop and mobile devices
