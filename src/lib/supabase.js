@@ -53,11 +53,32 @@ export async function getQuestionsByDifficulty(
     `Found ${artworksData.length} artworks for difficulty ${difficultyId}`,
   );
 
-  // Shuffle artworks and limit to requested amount
-  const shuffledArtworks = artworksData
+  // Ensure unique artists: group by artist and take one artwork per artist
+  const artistGroups = new Map();
+  artworksData.forEach((artwork) => {
+    const artistKey =
+      language === "ru" ? artwork.artist_name_ru : artwork.artist_name_en;
+    if (!artistGroups.has(artistKey)) {
+      artistGroups.set(artistKey, []);
+    }
+    artistGroups.get(artistKey).push(artwork);
+  });
+
+  // Select one random artwork per artist, then shuffle and limit
+  const uniqueArtistArtworks = Array.from(artistGroups.values()).map(
+    (artworkGroup) => {
+      // Pick random artwork from this artist's collection
+      return artworkGroup[Math.floor(Math.random() * artworkGroup.length)];
+    },
+  );
+
+  const shuffledArtworks = uniqueArtistArtworks
     .sort(() => Math.random() - 0.5)
     .slice(0, limit);
-  console.log(`Selected ${shuffledArtworks.length} random artworks for quiz`);
+
+  console.log(
+    `Selected ${shuffledArtworks.length} artworks from ${shuffledArtworks.length} unique artists for quiz`,
+  );
 
   // Build questions from shuffled artworks using smart wrong answers
   const questions = await Promise.all(
@@ -517,10 +538,32 @@ export async function getMixQuestions(limit = 10, language = "ru") {
 
   console.log(`Found ${artworksData.length} artworks for mix difficulty`);
 
-  // Shuffle and limit artworks
-  const shuffledArtworks = artworksData
-    .sort(() => 0.5 - Math.random())
+  // Ensure unique artists: group by artist and take one artwork per artist
+  const artistGroups = new Map();
+  artworksData.forEach((artwork) => {
+    const artistKey =
+      language === "ru" ? artwork.artist_name_ru : artwork.artist_name_en;
+    if (!artistGroups.has(artistKey)) {
+      artistGroups.set(artistKey, []);
+    }
+    artistGroups.get(artistKey).push(artwork);
+  });
+
+  // Select one random artwork per artist, then shuffle and limit
+  const uniqueArtistArtworks = Array.from(artistGroups.values()).map(
+    (artworkGroup) => {
+      // Pick random artwork from this artist's collection
+      return artworkGroup[Math.floor(Math.random() * artworkGroup.length)];
+    },
+  );
+
+  const shuffledArtworks = uniqueArtistArtworks
+    .sort(() => Math.random() - 0.5)
     .slice(0, limit);
+
+  console.log(
+    `Mix questions: Selected ${shuffledArtworks.length} artworks from ${shuffledArtworks.length} unique artists`,
+  );
 
   // Build questions from random artworks using smart wrong answers
   const questions = await Promise.all(

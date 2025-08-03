@@ -359,7 +359,7 @@
 </script>
 
 <svelte:head>
-	<title>Guess the Masterpiece - Art Quiz Game</title>
+	<title>Masterpiece - Art Quiz Game</title>
 	<meta name="description" content="Test your knowledge of famous paintings with our interactive art quiz game." />
 </svelte:head>
 

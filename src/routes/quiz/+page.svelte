@@ -24,7 +24,7 @@
 	let autoAdvanceTimer = null;
 	
 	// Timer state
-	let timeLeft = 10;
+	let timeLeft = 15;
 	let questionTimer = null;
 	let isTimerActive = false;
 	
@@ -236,7 +236,7 @@
 			return;
 		}
 		
-		timeLeft = 10;
+		timeLeft = 15;
 		isTimerActive = true;
 		
 		questionTimer = setInterval(() => {
@@ -452,7 +452,7 @@
 									stroke-width="3" 
 									fill="none" 
 									stroke-dasharray="100.53" 
-									stroke-dashoffset={100.53 - (timeLeft / 10) * 100.53}
+									stroke-dashoffset={100.53 - (timeLeft / 15) * 100.53}
 									stroke-linecap="round"
 									class="transition-all duration-1000 ease-linear"
 								/>
